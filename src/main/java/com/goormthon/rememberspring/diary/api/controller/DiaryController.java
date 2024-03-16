@@ -25,7 +25,7 @@ public class DiaryController {
     @PostMapping(value = "/create")
     public RspTemplate<?> createDiary(
             @RequestPart MultipartFile imageFile,
-            @RequestPart @Valid DiaryContentRequestDto diaryContentRequestDto)  {
+            @RequestPart @Valid DiaryContentRequestDto diaryContentRequestDto) throws Exception{
 
         return new RspTemplate<>(HttpStatus.OK, "일기 생성", diaryService.chat(imageFile, diaryContentRequestDto));
     }
