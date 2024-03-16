@@ -17,6 +17,12 @@ spring:
         format_sql: true
     open-in-view: false
 
+  openai:
+    model: ${spring.openai.model}
+    api:
+      key: ${spring.openai.api.key}
+      url: ${spring.openai.api.url}
+
 logging:
   level:
     org.hibernate.sql: debug
