@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/user")
 @RequiredArgsConstructor
@@ -24,9 +26,9 @@ public class DiaryController {
 
     @PostMapping(value = "/create")
     public RspTemplate<?> createDiary(
-            @RequestPart MultipartFile imageFile,
+            @RequestPart List<MultipartFile> files,
             @RequestPart @Valid DiaryContentRequestDto diaryContentRequestDto) throws Exception{
 
-        return new RspTemplate<>(HttpStatus.OK, "일기 생성", diaryService.chat(imageFile, diaryContentRequestDto));
+        return new RspTemplate<>(HttpStatus.OK, "일기 생성", diaryService.chat(files, diaryContentRequestDto));
     }
 }
