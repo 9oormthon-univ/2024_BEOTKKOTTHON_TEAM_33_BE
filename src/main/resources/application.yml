@@ -17,11 +17,18 @@ spring:
         format_sql: true
     open-in-view: false
 
+# openAI 모델 및 키, 엔드포인트
   openai:
     model: ${spring.openai.model}
     api:
       key: ${spring.openai.api.key}
       url: ${spring.openai.api.url}
+
+#  이미지 용량 제한
+  servlet:
+    multipart:
+      maxFileSize: 10MB
+      maxRequestSize: 20MB
 
 logging:
   level:

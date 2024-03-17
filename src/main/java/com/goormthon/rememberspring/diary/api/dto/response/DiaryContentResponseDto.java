@@ -1,10 +1,14 @@
 package com.goormthon.rememberspring.diary.api.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Setter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
 
-@Setter
-@AllArgsConstructor
-public class DiaryContentResponseDto {
-    private String resultText;
+public record DiaryContentResponseDto (
+        String title,
+        String date,
+        List<String> hashTag,
+        String contents
+
+){
 }
