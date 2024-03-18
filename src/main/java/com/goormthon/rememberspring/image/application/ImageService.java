@@ -4,6 +4,7 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
+import com.goormthon.rememberspring.image.api.dto.response.ImageResDto;
 import com.goormthon.rememberspring.image.domain.Image;
 import com.goormthon.rememberspring.image.domain.repository.ImageRepository;
 import com.goormthon.rememberspring.member.domain.Member;
@@ -38,11 +39,11 @@ public class ImageService {
         this.imageRepository = imageRepository;
     }
 
+    // 이미지 업로드
     @Transactional
-    public List<String> upload(String email, MultipartFile[] multipartFiles) throws IOException {
+    public List<ImageResDto> upload(String email, MultipartFile[] multipartFiles) throws IOException {
         Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
 
-        List<String> responseImages = new ArrayList<>();
         int imageSequence = 1;
 
         for (MultipartFile file : multipartFiles) {
@@ -55,11 +56,9 @@ public class ImageService {
             storageSave(file, filePath, storage);
             imageSave(imgUrl, imageSequence, member);
             imageSequence++;
-
-            responseImages.add(imgUrl);
         }
 
-        return responseImages;
+        return getImagesResDto(member);
     }
 
     private static String getUuid() {
@@ -99,6 +98,24 @@ public class ImageService {
                 .build();
 
         imageRepository.save(image);
+    }
+
+    // 사용자별 이미지 전체 조회
+    public List<ImageResDto> images(String email) {
+        Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
+
+        return getImagesResDto(member);
+    }
+
+    private List<ImageResDto> getImagesResDto(Member member) {
+        List<Image> getImages = imageRepository.findByMember(member);
+        List<ImageResDto> responseImages = new ArrayList<>();
+
+        for (Image image : getImages) {
+            responseImages.add(ImageResDto.from(image));
+        }
+
+        return responseImages;
     }
 
 }
