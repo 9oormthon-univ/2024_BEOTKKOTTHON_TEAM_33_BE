@@ -1,0 +1,18 @@
+spring:
+  profiles:
+    active: prod
+
+jwt:
+  secret: ${jwt.secret}
+
+token:
+  expire:
+    time:
+      access : ${token.expire.time.access}
+      refresh : ${token.expire.time.refresh}
+
+oauth:
+  kakao:
+    client-id: ${oauth.kakao.client-id}
+    redirect-uri : ${oauth.kakao.redirect-uri}
+    id-token-url: ${oauth.kakao.id-token-url}
