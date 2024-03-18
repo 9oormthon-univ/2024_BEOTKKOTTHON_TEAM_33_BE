@@ -37,7 +37,7 @@ public class SecurityConfig {
     private void permitAllForOAuthEndpoints(HttpSecurity http) throws Exception {
         String[] permittedUrls = {
                 "/api/kakao/token",
-                "/api/token/access",
+                "/api/token/access"
         };
 
         for (String url : permittedUrls) {

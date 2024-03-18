@@ -24,11 +24,19 @@ spring:
       key: ${spring.openai.api.key}
       url: ${spring.openai.api.url}
 
-#  이미지 용량 제한
+  cloud:
+    gcp:
+      storage:
+        credentials:
+          location: ./remember-spring-gcp.json
+        project-id: spring-boot-server-414303
+        bucket: remember-spring
+
+  #  이미지 용량 제한
   servlet:
     multipart:
       maxFileSize: 10MB
-      maxRequestSize: 20MB
+      maxRequestSize: 60MB
 
 logging:
   level:
