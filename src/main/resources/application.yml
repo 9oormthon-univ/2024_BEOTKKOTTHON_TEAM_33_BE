@@ -28,9 +28,9 @@ spring:
     gcp:
       storage:
         credentials:
-          location: ./remember-spring-gcp.json
-        project-id: spring-boot-server-414303
-        bucket: remember-spring
+          location: ${spring.cloud.gcp.storage.credentials.location}
+        project-id: ${spring.cloud.gcp.storage.project-id}
+        bucket: ${spring.cloud.gcp.storage.bucket}
 
   #  이미지 용량 제한
   servlet:
