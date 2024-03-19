@@ -1,27 +1,27 @@
 package com.goormthon.rememberspring.diary.domain.entity;
 
+import com.goormthon.rememberspring.diary.api.dto.request.DiaryContentRequestDto;
+import com.goormthon.rememberspring.diary.api.dto.response.DiaryContentResponseDto;
 import com.goormthon.rememberspring.image.domain.Image;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
+import com.goormthon.rememberspring.member.domain.Member;
+import io.swagger.v3.oas.annotations.info.Info;
+import jakarta.persistence.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class Diary extends BaseTimeEntity {
+
+    // 다이어리 키
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "diary_id")
@@ -31,9 +31,10 @@ public class Diary extends BaseTimeEntity {
     @Column(nullable = false)
     private String title;
 
-    // ManyToOne 으로 User 객체 변경 예정
-    @Column(nullable = false)
-    private String writer;
+    // 회원 정보
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "member_id")
+    private Member member;
 
     // 일기 타입
     @Enumerated(EnumType.STRING)
@@ -45,10 +46,35 @@ public class Diary extends BaseTimeEntity {
     @Column(nullable = false)
     private Emotion emotion;
 
+    // 음성텍스트
+    @Column(nullable = false)
+    private String voiceText;
+
+    // 글 내용
     @Column(nullable = false)
     private String content;
 
-    @OneToMany(fetch = FetchType.LAZY, orphanRemoval = true, cascade = CascadeType.ALL)
-    private List<Image> images = new ArrayList<>();
+    // 해쉬태그
+    @ElementCollection(fetch = FetchType.LAZY)
+    private List<String> hashTags;
 
+    // 이미지
+    @OneToMany(fetch = FetchType.LAZY)
+    private List<Image> images;
+
+    public static Diary toEntity(DiaryContentResponseDto diaryContentResponseDto,
+                                 DiaryContentRequestDto diaryContentRequestDto,
+                                 List<Image> images,
+                                 Member member) {
+        return Diary.builder()
+                .title(diaryContentResponseDto.getTitle())
+                .member(member)
+                .diaryType(diaryContentRequestDto.getDiaryType())
+                .emotion(diaryContentRequestDto.getEmotion())
+                .voiceText(diaryContentRequestDto.getVoiceText())
+                .content(diaryContentResponseDto.getContents())
+                .hashTags(diaryContentResponseDto.getHashTag())
+                .images(images)
+                .build();
+    }
 }
