@@ -115,9 +115,7 @@ public class DiaryService {
         } catch (JsonParseException e) {
             throw new RuntimeException(e);
         }
-        System.out.println(diary.getContent());
         diary.updateContent(diaryContentResponseDto.getContents());
-        System.out.println(diary.getContent());
         diaryRepository.save(diary);
         DiaryResponseDto diaryResponseDto = DiaryResponseDto.from(diary, imageResDto);
         return diaryResponseDto;
