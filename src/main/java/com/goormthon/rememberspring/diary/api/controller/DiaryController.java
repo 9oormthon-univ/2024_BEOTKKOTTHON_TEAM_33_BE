@@ -3,6 +3,7 @@ package com.goormthon.rememberspring.diary.api.controller;
 import com.goormthon.rememberspring.diary.api.dto.request.DiaryContentRequestDto;
 import com.goormthon.rememberspring.diary.api.dto.response.ChatGptResponseDto;
 import com.goormthon.rememberspring.diary.api.dto.response.DiaryContentResponseDto;
+import com.goormthon.rememberspring.diary.api.dto.response.DiaryResponseDto;
 import com.goormthon.rememberspring.diary.application.DiaryService;
 import com.goormthon.rememberspring.diary.domain.entity.Diary;
 import com.goormthon.rememberspring.global.template.RspTemplate;
@@ -22,16 +23,15 @@ public class DiaryController {
     private DiaryService diaryService;
 
     @PostMapping(value = "/create")
-    public RspTemplate<Diary> createDiary(
+    public RspTemplate<DiaryResponseDto> createDiary(
             @AuthenticationPrincipal String email,
-            @RequestPart @Valid DiaryContentRequestDto diaryContentRequestDto) throws Exception{
+            @RequestPart DiaryContentRequestDto diaryContentRequestDto) throws Exception{
 
 
-        Diary diary = diaryService.chat(email, diaryContentRequestDto);
         return new RspTemplate<>(
                 HttpStatus.OK,
                 "일기 생성",
-                diary
+                diaryService.chat(email, diaryContentRequestDto)
                 );
     }
 
