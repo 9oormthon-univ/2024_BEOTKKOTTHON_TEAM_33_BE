@@ -74,4 +74,8 @@ public class Diary extends BaseTimeEntity {
                 .images(images)
                 .build();
     }
+
+    public void updateContent(String content) {
+        this.content = content;
+    }
 }

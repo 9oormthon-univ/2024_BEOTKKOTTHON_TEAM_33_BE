@@ -25,7 +25,7 @@ public class DiaryController {
     @PostMapping(value = "/create")
     public RspTemplate<DiaryResponseDto> createDiary(
             @AuthenticationPrincipal String email,
-            @RequestPart DiaryContentRequestDto diaryContentRequestDto) throws Exception{
+            @RequestBody DiaryContentRequestDto diaryContentRequestDto) throws Exception{
 
 
         return new RspTemplate<>(
@@ -33,6 +33,17 @@ public class DiaryController {
                 "일기 생성",
                 diaryService.chat(email, diaryContentRequestDto)
                 );
+    }
+
+    @PostMapping(value = "/retry")
+    public RspTemplate<DiaryResponseDto> retryDiary(
+            @AuthenticationPrincipal String email,
+            @RequestParam Long diaryId) throws Exception{
+        return new RspTemplate<>(
+                HttpStatus.OK,
+                "일기 생성",
+                diaryService.retry(email, diaryId)
+        );
     }
 
 }

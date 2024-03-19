@@ -59,7 +59,6 @@ public class DiaryService {
 
         for(Image image: getImages){
             imageResDto.add(ImageResDto.from(image));
-            System.out.println(ImageResDto.from(image).convertImageName());
         }
 
         // 리스트의 첫 번째 값(이미지)가 대표 이미지 이므로, 리스트의 첫 번째 값을 보냄.
@@ -86,6 +85,40 @@ public class DiaryService {
             images.updateImage(diary);
             imageRepository.save(images);
         }
+        DiaryResponseDto diaryResponseDto = DiaryResponseDto.from(diary, imageResDto);
+        return diaryResponseDto;
+    }
+
+    public DiaryResponseDto retry(String email, Long diaryId) throws Exception {
+        Member member = memberRepository.findByEmail(email).orElse(null);
+        Diary diary = diaryRepository.findById(diaryId).orElse(null);
+        List<Image> getImages = imageRepository.findByDiaryAndMember(diary, member);
+
+        DiaryContentRequestDto requestDto = new DiaryContentRequestDto(
+                diary.getDiaryType(),
+                diary.getEmotion(),
+                diary.getVoiceText()
+        );
+
+        List<ImageResDto> imageResDto = new ArrayList<>();
+        for(Image image: getImages){
+            imageResDto.add(ImageResDto.from(image));
+        }
+
+        ChatGptRequestDto request = new ChatGptRequestDto(model, buildQuery(imageResDto.get(0), requestDto));
+        ChatGptResponseDto chatGptResponseDto = template.postForObject(apiURL, request, ChatGptResponseDto.class);
+
+        DiaryContentResponseDto diaryContentResponseDto = null;
+        try {
+            diaryContentResponseDto =
+                    objectMapper.readValue(parseJson(chatGptResponseDto), DiaryContentResponseDto.class);
+        } catch (JsonParseException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println(diary.getContent());
+        diary.updateContent(diaryContentResponseDto.getContents());
+        System.out.println(diary.getContent());
+        diaryRepository.save(diary);
         DiaryResponseDto diaryResponseDto = DiaryResponseDto.from(diary, imageResDto);
         return diaryResponseDto;
     }
