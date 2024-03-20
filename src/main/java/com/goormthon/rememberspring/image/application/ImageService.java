@@ -44,6 +44,7 @@ public class ImageService {
     public List<ImageResDto> upload(String email, MultipartFile[] multipartFiles) throws IOException {
         Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
 
+        List<ImageResDto> responseImages = new ArrayList<>();
         int imageSequence = 1;
 
         for (MultipartFile file : multipartFiles) {
@@ -54,11 +55,13 @@ public class ImageService {
             String imgUrl = getImgUrl(filePath);
 
             storageSave(file, filePath, storage);
-            imageSave(imgUrl, imageSequence, member);
+            Image image = imageSave(imgUrl, imageSequence, member);
+            responseImages.add(ImageResDto.from(image));
+
             imageSequence++;
         }
 
-        return getImagesResDto(member);
+        return responseImages;
     }
 
     private static String getUuid() {
@@ -90,14 +93,14 @@ public class ImageService {
         storage.create(blobInfo, file.getInputStream());
     }
 
-    private void imageSave(String imgUrl, int imageSequence, Member member) {
+    private Image imageSave(String imgUrl, int imageSequence, Member member) {
         Image image = Image.builder()
                 .convertImageName(imgUrl)
                 .imageSequence(imageSequence)
                 .member(member)
                 .build();
 
-        imageRepository.save(image);
+        return imageRepository.save(image);
     }
 
     // 사용자별 이미지 전체 조회
