@@ -9,21 +9,21 @@ import com.goormthon.rememberspring.diary.api.dto.response.DiaryContentResponseD
 import com.goormthon.rememberspring.diary.api.dto.response.DiaryResponseDto;
 import com.goormthon.rememberspring.diary.domain.entity.Diary;
 import com.goormthon.rememberspring.diary.domain.repository.DiaryRepository;
+import com.goormthon.rememberspring.diary.excepion.DiaryNotFoundException;
 import com.goormthon.rememberspring.image.api.dto.response.ImageResDto;
 import com.goormthon.rememberspring.image.domain.Image;
 import com.goormthon.rememberspring.image.domain.repository.ImageRepository;
 import com.goormthon.rememberspring.member.domain.Member;
 import com.goormthon.rememberspring.member.domain.repository.MemberRepository;
-import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-
+import com.goormthon.rememberspring.member.exception.MemberNotFoundException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 
 @Service
@@ -55,21 +55,21 @@ public class DiaryService {
         Member member = memberRepository.findByEmail(email).orElse(null);
         // 아직 일기 생성이 안되었으므로, 이미지 DB의 diary_id 컬럼은  null
         List<Image> getImages = imageRepository.findByDiaryAndMember(null, member);
-        List<ImageResDto> imageResDto = new ArrayList<>();
 
-        for(Image image: getImages){
-            imageResDto.add(ImageResDto.from(image));
-        }
+        List<ImageResDto> imageResDto = getImageResDtos(getImages);
 
         // 리스트의 첫 번째 값(이미지)가 대표 이미지 이므로, 리스트의 첫 번째 값을 보냄.
         // 프롬프트 엔지니어링 -> 감정, 일기 타입, 음성 텍스트, 이미지를 보내, 응답값 받아옴
-        ChatGptRequestDto request = new ChatGptRequestDto(model, buildQuery(imageResDto.get(0), diaryContentRequestDto));
+        ChatGptRequestDto request = ChatGptRequestDto.builder()
+                .model(model)
+                .prompt(buildQuery(imageResDto.get(0), diaryContentRequestDto))
+                .build();
+
         ChatGptResponseDto chatGptResponseDto = template.postForObject(apiURL, request, ChatGptResponseDto.class);
 
-        DiaryContentResponseDto diaryContentResponseDto = null;
+        DiaryContentResponseDto diaryContentResponseDto;
         try {
-            diaryContentResponseDto =
-                    objectMapper.readValue(parseJson(chatGptResponseDto), DiaryContentResponseDto.class);
+            diaryContentResponseDto = objectMapper.readValue(parseJson(chatGptResponseDto), DiaryContentResponseDto.class);
         } catch (JsonParseException e) {
             throw new RuntimeException(e);
         }
@@ -80,18 +80,20 @@ public class DiaryService {
                 getImages,
                 member
         );
+
         diaryRepository.save(diary);
+
         for(Image images : getImages) {
             images.updateImage(diary);
             imageRepository.save(images);
         }
-        DiaryResponseDto diaryResponseDto = DiaryResponseDto.from(diary, imageResDto);
-        return diaryResponseDto;
+
+        return DiaryResponseDto.from(diary, imageResDto);
     }
 
-    public DiaryResponseDto retry(String email, Long diaryId) throws Exception {
-        Member member = memberRepository.findByEmail(email).orElse(null);
-        Diary diary = diaryRepository.findById(diaryId).orElse(null);
+    public DiaryResponseDto retry(String email) throws Exception {
+        Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
+        Diary diary = diaryRepository.findByMember(member).orElseThrow(DiaryNotFoundException::new);
         List<Image> getImages = imageRepository.findByDiaryAndMember(diary, member);
 
         DiaryContentRequestDto requestDto = new DiaryContentRequestDto(
@@ -100,25 +102,26 @@ public class DiaryService {
                 diary.getVoiceText()
         );
 
-        List<ImageResDto> imageResDto = new ArrayList<>();
-        for(Image image: getImages){
-            imageResDto.add(ImageResDto.from(image));
-        }
+        List<ImageResDto> imageResDto = getImageResDtos(getImages);
 
-        ChatGptRequestDto request = new ChatGptRequestDto(model, buildQuery(imageResDto.get(0), requestDto));
+        ChatGptRequestDto request = ChatGptRequestDto.builder()
+                .model(model)
+                .prompt(buildQuery(imageResDto.get(0), requestDto))
+                .build();
+
         ChatGptResponseDto chatGptResponseDto = template.postForObject(apiURL, request, ChatGptResponseDto.class);
 
-        DiaryContentResponseDto diaryContentResponseDto = null;
+        DiaryContentResponseDto diaryContentResponseDto;
         try {
-            diaryContentResponseDto =
-                    objectMapper.readValue(parseJson(chatGptResponseDto), DiaryContentResponseDto.class);
+            diaryContentResponseDto = objectMapper.readValue(parseJson(chatGptResponseDto), DiaryContentResponseDto.class);
         } catch (JsonParseException e) {
             throw new RuntimeException(e);
         }
+
         diary.updateContent(diaryContentResponseDto.getContents());
         diaryRepository.save(diary);
-        DiaryResponseDto diaryResponseDto = DiaryResponseDto.from(diary, imageResDto);
-        return diaryResponseDto;
+
+        return DiaryResponseDto.from(diary, imageResDto);
     }
 
     private String buildQuery(ImageResDto imageFile, DiaryContentRequestDto dto) throws Exception {
@@ -156,8 +159,16 @@ public class DiaryService {
 
     }
 
+    private static List<ImageResDto> getImageResDtos(List<Image> getImages) {
+        List<ImageResDto> imageResDto = new ArrayList<>();
+
+        for(Image image: getImages){
+            imageResDto.add(ImageResDto.from(image));
+        }
+        return imageResDto;
+    }
+
     private String parseJson(ChatGptResponseDto chatGptResponseDto){
-        // 백틱이 포함된 컨텐츠
         String content = chatGptResponseDto.getChoices().get(0).getMessage().getContent();
         content = content.substring(7);
         content = content.substring(0, content.length()-4);

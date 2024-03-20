@@ -1,23 +1,20 @@
 package com.goormthon.rememberspring.diary.api.controller;
 
 import com.goormthon.rememberspring.diary.api.dto.request.DiaryContentRequestDto;
-import com.goormthon.rememberspring.diary.api.dto.response.ChatGptResponseDto;
-import com.goormthon.rememberspring.diary.api.dto.response.DiaryContentResponseDto;
 import com.goormthon.rememberspring.diary.api.dto.response.DiaryResponseDto;
 import com.goormthon.rememberspring.diary.application.DiaryService;
-import com.goormthon.rememberspring.diary.domain.entity.Diary;
 import com.goormthon.rememberspring.global.template.RspTemplate;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/user")
@@ -50,12 +47,11 @@ public class DiaryController {
     })
     @PostMapping(value = "/retry")
     public RspTemplate<DiaryResponseDto> retryDiary(
-            @AuthenticationPrincipal String email,
-            @RequestParam Long diaryId) throws Exception{
+            @AuthenticationPrincipal String email) throws Exception{
         return new RspTemplate<>(
                 HttpStatus.OK,
                 "일기 생성",
-                diaryService.retry(email, diaryId)
+                diaryService.retry(email)
         );
     }
 
