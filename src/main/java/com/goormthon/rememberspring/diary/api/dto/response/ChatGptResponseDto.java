@@ -1,14 +1,12 @@
 package com.goormthon.rememberspring.diary.api.dto.response;
 
 import com.goormthon.rememberspring.diary.api.dto.Message;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 
-@Data
-@NoArgsConstructor
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 public class ChatGptResponseDto {
 
