@@ -27,7 +27,7 @@ import org.springframework.web.client.RestTemplate;
 
 
 @Service
-public class DiaryService {
+public class DiaryGeneratorService {
 
     @Value("${spring.openai.model}")
     private String model;
@@ -42,7 +42,7 @@ public class DiaryService {
     private final MemberRepository memberRepository;
     private final DiaryRepository diaryRepository;
 
-    public DiaryService(ObjectMapper objectMapper, ImageRepository imageRepository, MemberRepository memberRepository, DiaryRepository diaryRepository) {
+    public DiaryGeneratorService(ObjectMapper objectMapper, ImageRepository imageRepository, MemberRepository memberRepository, DiaryRepository diaryRepository) {
         this.objectMapper = objectMapper;
         this.imageRepository = imageRepository;
         this.memberRepository = memberRepository;

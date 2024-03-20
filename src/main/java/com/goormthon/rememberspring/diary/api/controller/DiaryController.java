@@ -2,7 +2,7 @@ package com.goormthon.rememberspring.diary.api.controller;
 
 import com.goormthon.rememberspring.diary.api.dto.request.DiaryContentRequestDto;
 import com.goormthon.rememberspring.diary.api.dto.response.DiaryResponseDto;
-import com.goormthon.rememberspring.diary.application.DiaryService;
+import com.goormthon.rememberspring.diary.application.DiaryGeneratorService;
 import com.goormthon.rememberspring.global.template.RspTemplate;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class DiaryController {
 
     @Autowired
-    private DiaryService diaryService;
+    private DiaryGeneratorService diaryGeneratorService;
 
     @Operation(summary = "일기 생성", description = "일기를 생성합니다.")
     @ApiResponses(value = {
@@ -37,7 +37,7 @@ public class DiaryController {
         return new RspTemplate<>(
                 HttpStatus.OK,
                 "일기 생성",
-                diaryService.chat(email, diaryContentRequestDto)
+                diaryGeneratorService.chat(email, diaryContentRequestDto)
                 );
     }
 
@@ -51,7 +51,7 @@ public class DiaryController {
         return new RspTemplate<>(
                 HttpStatus.OK,
                 "일기 생성",
-                diaryService.retry(email)
+                diaryGeneratorService.retry(email)
         );
     }
 
