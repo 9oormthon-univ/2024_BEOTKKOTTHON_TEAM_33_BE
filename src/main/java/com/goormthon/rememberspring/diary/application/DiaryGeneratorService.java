@@ -8,7 +8,10 @@ import com.goormthon.rememberspring.diary.api.dto.response.ChatGptResponseDto;
 import com.goormthon.rememberspring.diary.api.dto.response.DiaryContentResponseDto;
 import com.goormthon.rememberspring.diary.api.dto.response.DiaryResponseDto;
 import com.goormthon.rememberspring.diary.domain.entity.Diary;
+import com.goormthon.rememberspring.diary.domain.entity.Hashtag;
+import com.goormthon.rememberspring.diary.domain.repository.DiaryHashtagRepository;
 import com.goormthon.rememberspring.diary.domain.repository.DiaryRepository;
+import com.goormthon.rememberspring.diary.domain.repository.HashtagRepository;
 import com.goormthon.rememberspring.diary.excepion.DiaryNotFoundException;
 import com.goormthon.rememberspring.image.api.dto.response.ImageResDto;
 import com.goormthon.rememberspring.image.domain.Image;
@@ -20,13 +23,17 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 
 @Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class DiaryGeneratorService {
 
     @Value("${spring.openai.model}")
@@ -41,15 +48,10 @@ public class DiaryGeneratorService {
     private final ImageRepository imageRepository;
     private final MemberRepository memberRepository;
     private final DiaryRepository diaryRepository;
+    private final HashtagRepository hashtagRepository;
+    private final DiaryHashtagRepository diaryHashtagRepository;
 
-    public DiaryGeneratorService(ObjectMapper objectMapper, ImageRepository imageRepository, MemberRepository memberRepository, DiaryRepository diaryRepository) {
-        this.objectMapper = objectMapper;
-        this.imageRepository = imageRepository;
-        this.memberRepository = memberRepository;
-        this.diaryRepository = diaryRepository;
-    }
-
-
+    @Transactional
     public DiaryResponseDto chat(String email, DiaryContentRequestDto diaryContentRequestDto) throws Exception {
         // 인증 시, 헤더에 실려온 토큰을 분석하여 이메일을 받아와, Member 객체 받아옴.
         Member member = memberRepository.findByEmail(email).orElse(null);
@@ -83,7 +85,18 @@ public class DiaryGeneratorService {
 
         diaryRepository.save(diary);
 
-        for(Image images : getImages) {
+        // 해시태그 저장
+        for (String tagName : diaryContentResponseDto.getHashtag()) {
+            Hashtag hashtag = hashtagRepository.findByName(tagName)
+                    .orElseGet(() ->
+                            hashtagRepository.save(Hashtag.builder()
+                                .name(tagName)
+                                .build()));
+
+            diary.addHashtagMapping(hashtag);
+        }
+
+        for (Image images : getImages) {
             images.updateImage(diary);
             imageRepository.save(images);
         }
@@ -91,9 +104,10 @@ public class DiaryGeneratorService {
         return DiaryResponseDto.from(diary, imageResDto);
     }
 
-    public DiaryResponseDto retry(String email) throws Exception {
+    @Transactional
+    public DiaryResponseDto retry(String email, Long diaryId) throws Exception {
         Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
-        Diary diary = diaryRepository.findByMember(member).orElseThrow(DiaryNotFoundException::new);
+        Diary diary = diaryRepository.findById(diaryId).orElseThrow(DiaryNotFoundException::new);
         List<Image> getImages = imageRepository.findByDiaryAndMember(diary, member);
 
         DiaryContentRequestDto requestDto = new DiaryContentRequestDto(
@@ -119,7 +133,19 @@ public class DiaryGeneratorService {
         }
 
         diary.updateContent(diaryContentResponseDto.getContents());
-        diaryRepository.save(diary);
+
+        // 해시태그 저장
+        for (String tagName : diaryContentResponseDto.getHashtag()) {
+            Hashtag hashtag = hashtagRepository.findByName(tagName)
+                    .orElseGet(() ->
+                            hashtagRepository.save(Hashtag.builder()
+                                    .name(tagName)
+                                    .build()));
+
+            if (!diaryHashtagRepository.existsByDiaryAndHashtag(diary, hashtag)) {
+                diary.addHashtagMapping(hashtag);
+            }
+        }
 
         return DiaryResponseDto.from(diary, imageResDto);
     }
@@ -128,18 +154,18 @@ public class DiaryGeneratorService {
 
         return dto.getVoiceText() != null ?
                 "\n{\ntype :  text, text : "
-                +       "\n일기 타입 : " + dto.getDiaryType()
-                +       "\n내가 느낀 감정 : " + dto.getEmotion()
-                +       "\n음성 텍스트 : " + dto.getVoiceText()
+                        + "\n일기 타입 : " + dto.getDiaryType()
+                        + "\n내가 느낀 감정 : " + dto.getEmotion()
+                        + "\n음성 텍스트 : " + dto.getVoiceText()
                         + "\n질문 : 일기타입, 내가 느낀 감정, 음성텍스트, 이미지를 바탕으로 일기를 구체적으로 작성해줘."
                         + "\n반환 형식 : "
                         + "\ntitle : %s"
                         + "\ndate : " + new SimpleDateFormat("yyyy년 MM월 dd일").format(new Date())
-                        + "\nhashTag : [String Array]"
+                        + "\nhashtag : [String Array]"
                         + "\ncontents : %s"
                             + "\n"
                         + "\ntitle은 일기 제목이며 10자로 제한한다."
-                        + "\nhashTag는 일기 내용과 관련 있는 해시태그이며, 2~4개의 해시태그를 생성하고, 하나의 해시태그는 5자로 제한한다."
+                        + "\nhashtag 일기 내용과 관련 있는 해시태그이며, 2~4개의 해시태그를 생성하고, 하나의 해시태그는 5자로 제한한다."
                         + "해시태그 단어 앞에는 반드시 #을 붙인다."
                         + "\ncontents는 일기 내용이며, 350자로 제한한다."
                         + "\ndate는 정해진 형식을 반환하면 된다."
@@ -162,16 +188,16 @@ public class DiaryGeneratorService {
     private static List<ImageResDto> getImageResDtos(List<Image> getImages) {
         List<ImageResDto> imageResDto = new ArrayList<>();
 
-        for(Image image: getImages){
+        for (Image image : getImages) {
             imageResDto.add(ImageResDto.from(image));
         }
         return imageResDto;
     }
 
-    private String parseJson(ChatGptResponseDto chatGptResponseDto){
+    private String parseJson(ChatGptResponseDto chatGptResponseDto) {
         String content = chatGptResponseDto.getChoices().get(0).getMessage().getContent();
         content = content.substring(7);
-        content = content.substring(0, content.length()-4);
+        content = content.substring(0, content.length() - 4);
 
         return content;
     }

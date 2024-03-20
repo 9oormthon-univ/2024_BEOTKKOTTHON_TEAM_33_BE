@@ -2,21 +2,31 @@ package com.goormthon.rememberspring.diary.domain.entity;
 
 import com.goormthon.rememberspring.diary.api.dto.request.DiaryContentRequestDto;
 import com.goormthon.rememberspring.diary.api.dto.response.DiaryContentResponseDto;
-import com.goormthon.rememberspring.diary.config.StringListConverter;
 import com.goormthon.rememberspring.image.domain.Image;
 import com.goormthon.rememberspring.member.domain.Member;
-import io.swagger.v3.oas.annotations.info.Info;
-import jakarta.persistence.*;
-
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-
-import lombok.*;
+import java.util.Set;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Diary extends BaseTimeEntity {
 
@@ -29,6 +39,9 @@ public class Diary extends BaseTimeEntity {
     // 일기 제목
     @Column(nullable = false)
     private String title;
+
+    // 공유 여부
+    private boolean isPublic;
 
     // 회원 정보
     @ManyToOne(fetch = FetchType.LAZY)
@@ -52,12 +65,25 @@ public class Diary extends BaseTimeEntity {
     private String content;
 
     // 해쉬태그
-    @Convert(converter = StringListConverter.class)
-    private List<String> hashTags;
+    @OneToMany(mappedBy = "diary", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<DiaryHashtagMapping> diaryHashtagMapping = new HashSet<>();
 
     // 이미지
     @OneToMany(mappedBy = "diary",  orphanRemoval = true)
-    private List<Image> images;
+    private List<Image> images = new ArrayList<>();
+
+    @Builder
+    public Diary(String title, boolean isPublic, Member member, DiaryType diaryType, Emotion emotion, String voiceText,
+                 String content, List<Image> images) {
+        this.title = title;
+        this.isPublic = isPublic;
+        this.member = member;
+        this.diaryType = diaryType;
+        this.emotion = emotion;
+        this.voiceText = voiceText;
+        this.content = content;
+        this.images = images;
+    }
 
     public static Diary toEntity(DiaryContentResponseDto diaryContentResponseDto,
                                  DiaryContentRequestDto diaryContentRequestDto,
@@ -70,12 +96,24 @@ public class Diary extends BaseTimeEntity {
                 .emotion(diaryContentRequestDto.getEmotion())
                 .voiceText(diaryContentRequestDto.getVoiceText())
                 .content(diaryContentResponseDto.getContents())
-                .hashTags(diaryContentResponseDto.getHashTag())
                 .images(images)
                 .build();
     }
 
+    public void addHashtagMapping(Hashtag hashtag) {
+        DiaryHashtagMapping mapping = DiaryHashtagMapping.builder()
+                .diary(this)
+                .hashtag(hashtag)
+                .build();
+
+        this.diaryHashtagMapping.add(mapping);
+    }
+
     public void updateContent(String content) {
         this.content = content;
+    }
+
+    public void updateIsPublic() {
+        this.isPublic = true;
     }
 }
