@@ -2,6 +2,7 @@ package com.goormthon.rememberspring.diary.api.controller;
 
 import com.goormthon.rememberspring.diary.api.dto.request.DiaryContentRequestDto;
 import com.goormthon.rememberspring.diary.api.dto.response.DiaryGeneratorResponseDto;
+import com.goormthon.rememberspring.diary.api.dto.response.DiaryResDto;
 import com.goormthon.rememberspring.diary.api.dto.response.HashtagDiariesResDto;
 import com.goormthon.rememberspring.diary.application.DiaryGeneratorService;
 import com.goormthon.rememberspring.diary.application.DiaryService;
@@ -13,7 +14,6 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -39,16 +39,10 @@ public class DiaryController {
             @ApiResponse(responseCode = "200", description = "일기 생성 성공"),
     })
     @PostMapping(value = "/create")
-    public RspTemplate<DiaryGeneratorResponseDto> createDiary(
-            @AuthenticationPrincipal String email,
-            @RequestBody DiaryContentRequestDto diaryContentRequestDto) throws Exception{
+    public RspTemplate<DiaryGeneratorResponseDto> createDiary(@AuthenticationPrincipal String email,
+                                                              @RequestBody DiaryContentRequestDto diaryContentRequestDto) throws Exception {
 
-
-        return new RspTemplate<>(
-                HttpStatus.OK,
-                "일기 생성",
-                diaryGeneratorService.chat(email, diaryContentRequestDto)
-                );
+        return new RspTemplate<>(HttpStatus.OK, "일기 생성", diaryGeneratorService.chat(email, diaryContentRequestDto));
     }
 
     @Operation(summary = "일기 생성 재요청", description = "일기를 생성을 재요청합니다.")
@@ -56,17 +50,13 @@ public class DiaryController {
             @ApiResponse(responseCode = "200", description = "일기 생성 재요청 성공"),
     })
     @PostMapping(value = "/retry")
-    public RspTemplate<DiaryGeneratorResponseDto> retryDiary(
-            @AuthenticationPrincipal String email,
-            @RequestParam(name = "diary") Long diaryId) throws Exception{
-        return new RspTemplate<>(
-                HttpStatus.OK,
-                "일기 생성",
-                diaryGeneratorService.retry(email, diaryId)
+    public RspTemplate<DiaryGeneratorResponseDto> retryDiary(@AuthenticationPrincipal String email,
+                                                             @RequestParam(name = "diary") Long diaryId) throws Exception {
+        return new RspTemplate<>(HttpStatus.OK, "일기 재생성", diaryGeneratorService.retry(email, diaryId)
         );
     }
 
-    @Operation(summary = "모아보기", description = "나의 다이어리를 모두 불러옵니다.")
+    @Operation(summary = "다이어리 모아보기", description = "나의 다이어리를 모두 불러옵니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "401", description = "인증실패", content = @Content(schema = @Schema(example = "INVALID_HEADER or INVALID_TOKEN"))),
@@ -77,7 +67,7 @@ public class DiaryController {
                                                                   @PathVariable(name = "filterIndex") int filterIndex,
                                                                   @RequestParam(value = "page", defaultValue = "0") int page,
                                                                   @RequestParam(value = "size", defaultValue = "10") int size) {
-        List<HashtagDiariesResDto> allDiaries = new ArrayList<>();
+        List<HashtagDiariesResDto> allDiaries;
 
         if (filterIndex == 1) {
             allDiaries = diaryService.gatherAllDiaries(email, page, size);
@@ -86,6 +76,28 @@ public class DiaryController {
         }
 
         return new RspTemplate<>(HttpStatus.OK, "조회", allDiaries);
+    }
+
+    @Operation(summary = "다이어리 상세 보기", description = "나의 다이어리 상세를 불러옵니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "401", description = "인증실패", content = @Content(schema = @Schema(example = "INVALID_HEADER or INVALID_TOKEN"))),
+    })
+    @GetMapping("/diaries/{diary}")
+    public RspTemplate<DiaryResDto> getDiary(@AuthenticationPrincipal String email,
+                                             @PathVariable("diary") Long diaryId) {
+        return new RspTemplate<>(HttpStatus.OK, "다이어리 상세 보기", diaryService.getDiary(email, diaryId));
+    }
+
+    @Operation(summary = "다이어리 공유/취소", description = "나의 다이어리를 공유(true)/취소(false) 합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "401", description = "인증실패", content = @Content(schema = @Schema(example = "INVALID_HEADER or INVALID_TOKEN"))),
+    })
+    @PostMapping("/diaries/{diary}")
+    public RspTemplate<Boolean> updatePublic(@AuthenticationPrincipal String email,
+                                             @PathVariable("diary") Long diaryId) {
+        return new RspTemplate<>(HttpStatus.OK, "다이어리 공유/취소", diaryService.updatePublic(email, diaryId));
     }
 
 }

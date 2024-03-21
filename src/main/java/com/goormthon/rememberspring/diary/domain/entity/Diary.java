@@ -114,6 +114,6 @@ public class Diary extends BaseTimeEntity {
     }
 
     public void updateIsPublic() {
-        this.isPublic = true;
+        this.isPublic = !isPublic;
     }
 }

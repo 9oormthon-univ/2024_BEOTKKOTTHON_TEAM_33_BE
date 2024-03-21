@@ -2,9 +2,11 @@ package com.goormthon.rememberspring.diary.application;
 
 import com.goormthon.rememberspring.diary.api.dto.response.DiaryResDto;
 import com.goormthon.rememberspring.diary.api.dto.response.HashtagDiariesResDto;
+import com.goormthon.rememberspring.diary.domain.entity.Diary;
 import com.goormthon.rememberspring.diary.domain.entity.DiaryHashtagMapping;
 import com.goormthon.rememberspring.diary.domain.repository.DiaryHashtagRepository;
 import com.goormthon.rememberspring.diary.domain.repository.DiaryRepository;
+import com.goormthon.rememberspring.diary.excepion.DiaryNotFoundException;
 import com.goormthon.rememberspring.member.domain.Member;
 import com.goormthon.rememberspring.member.domain.repository.MemberRepository;
 import com.goormthon.rememberspring.member.exception.MemberNotFoundException;
@@ -97,7 +99,25 @@ public class DiaryService {
         );
 
         return List.of(HashtagDiariesResDto.from(diaries));
+    }
 
+    // 다이어리 상세보기
+    public DiaryResDto getDiary(String email, Long diaryId) {
+        Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
+        Diary diary = diaryRepository.findById(diaryId).orElseThrow(DiaryNotFoundException::new);
+
+        return DiaryResDto.from(diary);
+    }
+
+    // 다이어리 공유하기, 공유취소
+    @Transactional
+    public boolean updatePublic(String email, Long diaryId) {
+        Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
+        Diary diary = diaryRepository.findById(diaryId).orElseThrow(DiaryNotFoundException::new);
+
+        diary.updateIsPublic();
+
+        return diary.isPublic();
     }
 
     // 함께보기
