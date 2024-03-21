@@ -1,167 +1,105 @@
 package com.goormthon.rememberspring.diary.application;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.goormthon.rememberspring.diary.api.dto.request.ChatGptRequestDto;
-import com.goormthon.rememberspring.diary.api.dto.request.DiaryContentRequestDto;
-import com.goormthon.rememberspring.diary.api.dto.response.ChatGptResponseDto;
-import com.goormthon.rememberspring.diary.api.dto.response.DiaryContentResponseDto;
-import com.goormthon.rememberspring.diary.api.dto.response.DiaryResponseDto;
-import com.goormthon.rememberspring.diary.domain.entity.Diary;
+import com.goormthon.rememberspring.diary.api.dto.response.DiaryResDto;
+import com.goormthon.rememberspring.diary.api.dto.response.HashtagDiariesResDto;
+import com.goormthon.rememberspring.diary.domain.entity.DiaryHashtagMapping;
+import com.goormthon.rememberspring.diary.domain.repository.DiaryHashtagRepository;
 import com.goormthon.rememberspring.diary.domain.repository.DiaryRepository;
-import com.goormthon.rememberspring.image.api.dto.response.ImageResDto;
-import com.goormthon.rememberspring.image.domain.Image;
-import com.goormthon.rememberspring.image.domain.repository.ImageRepository;
 import com.goormthon.rememberspring.member.domain.Member;
 import com.goormthon.rememberspring.member.domain.repository.MemberRepository;
-import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-
-import java.text.SimpleDateFormat;
+import com.goormthon.rememberspring.member.exception.MemberNotFoundException;
+import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
 public class DiaryService {
 
-    @Value("${spring.openai.model}")
-    private String model;
-
-    @Value("${spring.openai.api.url}")
-    private String apiURL;
-
-    @Autowired
-    private RestTemplate template;
-    private final ObjectMapper objectMapper;
-    private final ImageRepository imageRepository;
-    private final MemberRepository memberRepository;
     private final DiaryRepository diaryRepository;
+    private final MemberRepository memberRepository;
+    private final DiaryHashtagRepository diaryHashtagRepository;
 
-    public DiaryService(ObjectMapper objectMapper, ImageRepository imageRepository, MemberRepository memberRepository, DiaryRepository diaryRepository) {
-        this.objectMapper = objectMapper;
-        this.imageRepository = imageRepository;
-        this.memberRepository = memberRepository;
-        this.diaryRepository = diaryRepository;
-    }
+    // 모아서 보기
+    public List<HashtagDiariesResDto> gatherAllDiaries(String email, int page, int size) {
+        Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
+        List<HashtagDiariesResDto> hashtagDiariesResDtoList = new ArrayList<>();
 
-
-    public DiaryResponseDto chat(String email, DiaryContentRequestDto diaryContentRequestDto) throws Exception {
-        // 인증 시, 헤더에 실려온 토큰을 분석하여 이메일을 받아와, Member 객체 받아옴.
-        Member member = memberRepository.findByEmail(email).orElse(null);
-        // 아직 일기 생성이 안되었으므로, 이미지 DB의 diary_id 컬럼은  null
-        List<Image> getImages = imageRepository.findByDiaryAndMember(null, member);
-        List<ImageResDto> imageResDto = new ArrayList<>();
-
-        for(Image image: getImages){
-            imageResDto.add(ImageResDto.from(image));
-        }
-
-        // 리스트의 첫 번째 값(이미지)가 대표 이미지 이므로, 리스트의 첫 번째 값을 보냄.
-        // 프롬프트 엔지니어링 -> 감정, 일기 타입, 음성 텍스트, 이미지를 보내, 응답값 받아옴
-        ChatGptRequestDto request = new ChatGptRequestDto(model, buildQuery(imageResDto.get(0), diaryContentRequestDto));
-        ChatGptResponseDto chatGptResponseDto = template.postForObject(apiURL, request, ChatGptResponseDto.class);
-
-        DiaryContentResponseDto diaryContentResponseDto = null;
-        try {
-            diaryContentResponseDto =
-                    objectMapper.readValue(parseJson(chatGptResponseDto), DiaryContentResponseDto.class);
-        } catch (JsonParseException e) {
-            throw new RuntimeException(e);
-        }
-
-        Diary diary = Diary.toEntity(
-                diaryContentResponseDto,
-                diaryContentRequestDto,
-                getImages,
-                member
-        );
-        diaryRepository.save(diary);
-        for(Image images : getImages) {
-            images.updateImage(diary);
-            imageRepository.save(images);
-        }
-        DiaryResponseDto diaryResponseDto = DiaryResponseDto.from(diary, imageResDto);
-        return diaryResponseDto;
-    }
-
-    public DiaryResponseDto retry(String email, Long diaryId) throws Exception {
-        Member member = memberRepository.findByEmail(email).orElse(null);
-        Diary diary = diaryRepository.findById(diaryId).orElse(null);
-        List<Image> getImages = imageRepository.findByDiaryAndMember(diary, member);
-
-        DiaryContentRequestDto requestDto = new DiaryContentRequestDto(
-                diary.getDiaryType(),
-                diary.getEmotion(),
-                diary.getVoiceText()
+        // 월에 대한 유저의 일기
+        hashtagDiariesResDtoList.add(HashtagDiariesResDto.of(
+                String.format("%d월의 일기", getMonth()),
+                getMonthDiaries(member, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "diaryId"))))
         );
 
-        List<ImageResDto> imageResDto = new ArrayList<>();
-        for(Image image: getImages){
-            imageResDto.add(ImageResDto.from(image));
+        // 멤버가 가지고 있는 다이어리에서 유니크 해시태그 가져오기.
+        List<DiaryHashtagMapping> memberDiaryHashtagMapping = diaryHashtagRepository.findAllByMemberDiaryHashtag(member);
+        List<String> uniqueHashtags = getUniqueHashtags(memberDiaryHashtagMapping);
+
+        for (String hashtagName : uniqueHashtags) {
+            // 멤버가 가지고 있는 다이어리와 매핑된 해시태그를 가져온다.
+            Page<DiaryHashtagMapping> diaryHashtagMappings = diaryHashtagRepository.findByDiary_MemberAndHashtag_Name(
+                    member,
+                    hashtagName,
+                    PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"))
+            );
+            Page<DiaryResDto> diaryResDtos = getDiaryResDtos(diaryHashtagMappings);
+
+            hashtagDiariesResDtoList.add(HashtagDiariesResDto.of(hashtagName, diaryResDtos));
         }
 
-        ChatGptRequestDto request = new ChatGptRequestDto(model, buildQuery(imageResDto.get(0), requestDto));
-        ChatGptResponseDto chatGptResponseDto = template.postForObject(apiURL, request, ChatGptResponseDto.class);
-
-        DiaryContentResponseDto diaryContentResponseDto = null;
-        try {
-            diaryContentResponseDto =
-                    objectMapper.readValue(parseJson(chatGptResponseDto), DiaryContentResponseDto.class);
-        } catch (JsonParseException e) {
-            throw new RuntimeException(e);
-        }
-        diary.updateContent(diaryContentResponseDto.getContents());
-        diaryRepository.save(diary);
-        DiaryResponseDto diaryResponseDto = DiaryResponseDto.from(diary, imageResDto);
-        return diaryResponseDto;
+        return hashtagDiariesResDtoList;
     }
 
-    private String buildQuery(ImageResDto imageFile, DiaryContentRequestDto dto) throws Exception {
+    // 월간 다이어리
+    private Page<DiaryResDto> getMonthDiaries(Member member, Pageable pageable) {
+        return diaryRepository.findByMonth(member, getMonth(), pageable);
+    }
 
-        return dto.getVoiceText() != null ?
-                "\n{\ntype :  text, text : "
-                +       "\n일기 타입 : " + dto.getDiaryType()
-                +       "\n내가 느낀 감정 : " + dto.getEmotion()
-                +       "\n음성 텍스트 : " + dto.getVoiceText()
-                        + "\n질문 : 일기타입, 내가 느낀 감정, 음성텍스트, 이미지를 바탕으로 일기를 구체적으로 작성해줘."
-                        + "\n반환 형식 : "
-                        + "\ntitle : %s"
-                        + "\ndate : " + new SimpleDateFormat("yyyy년 MM월 dd일").format(new Date())
-                        + "\nhashTag : [String Array]"
-                        + "\ncontents : %s"
-                            + "\n"
-                        + "\ntitle은 일기 제목이며 10자로 제한한다."
-                        + "\nhashTag는 일기 내용과 관련 있는 해시태그이며, 2~4개의 해시태그를 생성하고, 하나의 해시태그는 5자로 제한한다."
-                        + "해시태그 단어 앞에는 반드시 #을 붙인다."
-                        + "\ncontents는 일기 내용이며, 350자로 제한한다."
-                        + "\ndate는 정해진 형식을 반환하면 된다."
-                        + "\ntitle, date, hashTag, contents를 Text JSON로 변경해서 반환한다."
-                        + "\n}"
-                        + "\n{\ntype: image_url, image_url: {\n "+
-            "url :" + imageFile.convertImageName() +"\n}"
-                :
-                "\n{\ntype :  text, text : "
-                        + "\ndate : " + new SimpleDateFormat("yyyy년 MM월 dd일").format(new Date())
-                +       "\n일기 타입 : " + dto.getDiaryType()
-                +       "\n내가 느낀 감정 : " + dto.getEmotion()
-                +       "\n질문 : 일기타입, 내가 느낀 감정, 이미지를 바탕으로 일기를 구체적으로 작성해줘.}"
-                + "\n{\ntype: image_url, image_url: {\n "+
-                "url : https://i.pinimg.com/474x/8b/f3/a4/8bf3a4600ff3c92650605434da3c1b5c.jpg\n}"
-                ;
+    private int getMonth() {
+        return LocalDate.now().getMonth().getValue();
+    }
+
+    // 나의 다이어리와 연결되어 있는 해시태그 이름을 가져온다.
+    private List<String> getUniqueHashtags(List<DiaryHashtagMapping> memberDiaryHashtagMappings) {
+        return memberDiaryHashtagMappings.stream()
+                .map(mapping -> mapping.getHashtag().getName())
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    private Page<DiaryResDto> getDiaryResDtos(Page<DiaryHashtagMapping> diaryHashtagMappings) {
+        List<DiaryResDto> content = diaryHashtagMappings.getContent().stream()
+                .map(DiaryHashtagMapping::getDiary)
+                .map(DiaryResDto::from)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(content, diaryHashtagMappings.getPageable(), diaryHashtagMappings.getTotalElements());
+    }
+
+    // 순서대로보기
+    public List<HashtagDiariesResDto> orderAllDiaries(String email, int page, int size) {
+        Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
+
+        Page<DiaryResDto> diaries = diaryRepository.findByMember(
+                member,
+                PageRequest.of(page, size, Sort.by(Direction.DESC, "diaryId"))
+        );
+
+        return List.of(HashtagDiariesResDto.from(diaries));
 
     }
 
-    private String parseJson(ChatGptResponseDto chatGptResponseDto){
-        // 백틱이 포함된 컨텐츠
-        String content = chatGptResponseDto.getChoices().get(0).getMessage().getContent();
-        content = content.substring(7);
-        content = content.substring(0, content.length()-4);
+    // 함께보기
 
-        return content;
-    }
 }

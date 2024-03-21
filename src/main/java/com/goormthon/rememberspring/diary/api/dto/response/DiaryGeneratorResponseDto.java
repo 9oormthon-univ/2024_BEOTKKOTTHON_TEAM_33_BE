@@ -2,25 +2,27 @@ package com.goormthon.rememberspring.diary.api.dto.response;
 
 import com.goormthon.rememberspring.diary.domain.entity.Diary;
 import com.goormthon.rememberspring.image.api.dto.response.ImageResDto;
-import com.goormthon.rememberspring.member.domain.Member;
+import java.util.List;
 import lombok.Builder;
 
-import java.util.List;
-
 @Builder
-public record DiaryResponseDto (
+public record DiaryGeneratorResponseDto(
         Long diaryId,
         String title,
         String content,
-        List<String> hashTags,
+        List<String> hashtags,
         List<ImageResDto> images
 ) {
-    public static DiaryResponseDto from(Diary diary, List<ImageResDto> imageResDto) {
-        return DiaryResponseDto.builder()
+    public static DiaryGeneratorResponseDto from(Diary diary, List<ImageResDto> imageResDto) {
+        List<String> hashtags = diary.getDiaryHashtagMapping().stream()
+                .map(diaryHashtagMapping -> diaryHashtagMapping.getHashtag().getName())
+                .toList();
+
+        return DiaryGeneratorResponseDto.builder()
                 .diaryId(diary.getDiaryId())
                 .title(diary.getTitle())
                 .content(diary.getContent())
-                .hashTags(diary.getHashTags())
+                .hashtags(hashtags)
                 .images(imageResDto)
                 .build();
     }
