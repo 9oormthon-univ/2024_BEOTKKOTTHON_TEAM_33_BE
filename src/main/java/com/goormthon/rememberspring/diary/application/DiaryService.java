@@ -109,6 +109,17 @@ public class DiaryService {
         return DiaryResDto.from(diary);
     }
 
+    // 다이어리 공유하기, 공유취소
+    @Transactional
+    public boolean updatePublic(String email, Long diaryId) {
+        Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
+        Diary diary = diaryRepository.findById(diaryId).orElseThrow(DiaryNotFoundException::new);
+
+        diary.updateIsPublic();
+
+        return diary.isPublic();
+    }
+
     // 함께보기
 
 }

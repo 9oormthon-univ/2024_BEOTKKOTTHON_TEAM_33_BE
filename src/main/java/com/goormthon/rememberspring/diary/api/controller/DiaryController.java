@@ -83,10 +83,21 @@ public class DiaryController {
             @ApiResponse(responseCode = "200", description = "성공"),
             @ApiResponse(responseCode = "401", description = "인증실패", content = @Content(schema = @Schema(example = "INVALID_HEADER or INVALID_TOKEN"))),
     })
-    @GetMapping("/diaries")
+    @GetMapping("/diaries/{diary}")
     public RspTemplate<DiaryResDto> getDiary(@AuthenticationPrincipal String email,
-                                             @RequestParam("diary") Long diaryId) {
+                                             @PathVariable("diary") Long diaryId) {
         return new RspTemplate<>(HttpStatus.OK, "다이어리 상세 보기", diaryService.getDiary(email, diaryId));
+    }
+
+    @Operation(summary = "다이어리 공유/취소", description = "나의 다이어리를 공유(true)/취소(false) 합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "401", description = "인증실패", content = @Content(schema = @Schema(example = "INVALID_HEADER or INVALID_TOKEN"))),
+    })
+    @PostMapping("/diaries/{diary}")
+    public RspTemplate<Boolean> updatePublic(@AuthenticationPrincipal String email,
+                                             @PathVariable("diary") Long diaryId) {
+        return new RspTemplate<>(HttpStatus.OK, "다이어리 공유/취소", diaryService.updatePublic(email, diaryId));
     }
 
 }
