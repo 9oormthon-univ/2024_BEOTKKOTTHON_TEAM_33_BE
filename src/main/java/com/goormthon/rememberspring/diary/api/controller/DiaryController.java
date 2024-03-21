@@ -16,9 +16,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -81,12 +78,11 @@ public class DiaryController {
                                                                   @RequestParam(value = "page", defaultValue = "0") int page,
                                                                   @RequestParam(value = "size", defaultValue = "10") int size) {
         List<HashtagDiariesResDto> allDiaries = new ArrayList<>();
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "diaryId"));
 
         if (filterIndex == 1) {
             allDiaries = diaryService.gatherAllDiaries(email, page, size);
         } else {
-
+            allDiaries = diaryService.orderAllDiaries(email, page, size);
         }
 
         return new RspTemplate<>(HttpStatus.OK, "조회", allDiaries);

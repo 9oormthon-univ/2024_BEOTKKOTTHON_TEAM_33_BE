@@ -6,12 +6,18 @@ import org.springframework.data.domain.Page;
 @Builder
 public record HashtagDiariesResDto(
         String hashtagName,
-        Page<DiaryResDto> diaryResponseDtoList
+        Page<DiaryResDto> diaryResDtoList
 ) {
-    public static HashtagDiariesResDto of(String hashtagName, Page<DiaryResDto> diaryResponseDtoList) {
+    public static HashtagDiariesResDto of(String hashtagName, Page<DiaryResDto> diaryResDtoList) {
         return HashtagDiariesResDto.builder()
                 .hashtagName(hashtagName)
-                .diaryResponseDtoList(diaryResponseDtoList)
+                .diaryResDtoList(diaryResDtoList)
+                .build();
+    }
+
+    public static HashtagDiariesResDto from(Page<DiaryResDto> diaryResDtoList) {
+        return HashtagDiariesResDto.builder()
+                .diaryResDtoList(diaryResDtoList)
                 .build();
     }
 }

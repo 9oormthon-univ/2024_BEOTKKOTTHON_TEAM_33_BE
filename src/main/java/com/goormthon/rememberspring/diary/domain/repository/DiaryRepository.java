@@ -13,4 +13,7 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
     @Query("SELECT d FROM Diary d WHERE d.member = :member AND MONTH(d.createAt) = :month")
     Page<DiaryResDto> findByMonth(Member member, int month, Pageable pageable);
 
+    @Query("SELECT d FROM Diary d WHERE d.member = :member ")
+    Page<DiaryResDto> findByMember(Member member, Pageable pageable);
+
 }

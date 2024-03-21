@@ -18,6 +18,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -86,8 +87,18 @@ public class DiaryService {
         return new PageImpl<>(content, diaryHashtagMappings.getPageable(), diaryHashtagMappings.getTotalElements());
     }
 
-    // 순서대로 보기
+    // 순서대로보기
+    public List<HashtagDiariesResDto> orderAllDiaries(String email, int page, int size) {
+        Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
 
+        Page<DiaryResDto> diaries = diaryRepository.findByMember(
+                member,
+                PageRequest.of(page, size, Sort.by(Direction.DESC, "diaryId"))
+        );
+
+        return List.of(HashtagDiariesResDto.from(diaries));
+
+    }
 
     // 함께보기
 
