@@ -98,7 +98,6 @@ public class DiaryGeneratorService {
 
         for (Image images : getImages) {
             images.updateImage(diary);
-            imageRepository.save(images);
         }
 
         return DiaryGeneratorResponseDto.from(diary, imageResDto);
