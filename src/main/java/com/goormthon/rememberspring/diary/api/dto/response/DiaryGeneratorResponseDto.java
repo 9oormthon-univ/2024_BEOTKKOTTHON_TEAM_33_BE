@@ -6,19 +6,19 @@ import java.util.List;
 import lombok.Builder;
 
 @Builder
-public record DiaryResponseDto (
+public record DiaryGeneratorResponseDto(
         Long diaryId,
         String title,
         String content,
         List<String> hashtags,
         List<ImageResDto> images
 ) {
-    public static DiaryResponseDto from(Diary diary, List<ImageResDto> imageResDto) {
+    public static DiaryGeneratorResponseDto from(Diary diary, List<ImageResDto> imageResDto) {
         List<String> hashtags = diary.getDiaryHashtagMapping().stream()
                 .map(diaryHashtagMapping -> diaryHashtagMapping.getHashtag().getName())
                 .toList();
 
-        return DiaryResponseDto.builder()
+        return DiaryGeneratorResponseDto.builder()
                 .diaryId(diary.getDiaryId())
                 .title(diary.getTitle())
                 .content(diary.getContent())

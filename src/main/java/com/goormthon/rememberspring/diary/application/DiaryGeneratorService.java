@@ -6,7 +6,7 @@ import com.goormthon.rememberspring.diary.api.dto.request.ChatGptRequestDto;
 import com.goormthon.rememberspring.diary.api.dto.request.DiaryContentRequestDto;
 import com.goormthon.rememberspring.diary.api.dto.response.ChatGptResponseDto;
 import com.goormthon.rememberspring.diary.api.dto.response.DiaryContentResponseDto;
-import com.goormthon.rememberspring.diary.api.dto.response.DiaryResponseDto;
+import com.goormthon.rememberspring.diary.api.dto.response.DiaryGeneratorResponseDto;
 import com.goormthon.rememberspring.diary.domain.entity.Diary;
 import com.goormthon.rememberspring.diary.domain.entity.Hashtag;
 import com.goormthon.rememberspring.diary.domain.repository.DiaryHashtagRepository;
@@ -52,7 +52,7 @@ public class DiaryGeneratorService {
     private final DiaryHashtagRepository diaryHashtagRepository;
 
     @Transactional
-    public DiaryResponseDto chat(String email, DiaryContentRequestDto diaryContentRequestDto) throws Exception {
+    public DiaryGeneratorResponseDto chat(String email, DiaryContentRequestDto diaryContentRequestDto) throws Exception {
         // 인증 시, 헤더에 실려온 토큰을 분석하여 이메일을 받아와, Member 객체 받아옴.
         Member member = memberRepository.findByEmail(email).orElse(null);
         // 아직 일기 생성이 안되었으므로, 이미지 DB의 diary_id 컬럼은  null
@@ -101,11 +101,11 @@ public class DiaryGeneratorService {
             imageRepository.save(images);
         }
 
-        return DiaryResponseDto.from(diary, imageResDto);
+        return DiaryGeneratorResponseDto.from(diary, imageResDto);
     }
 
     @Transactional
-    public DiaryResponseDto retry(String email, Long diaryId) throws Exception {
+    public DiaryGeneratorResponseDto retry(String email, Long diaryId) throws Exception {
         Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
         Diary diary = diaryRepository.findById(diaryId).orElseThrow(DiaryNotFoundException::new);
         List<Image> getImages = imageRepository.findByDiaryAndMember(diary, member);
@@ -147,7 +147,7 @@ public class DiaryGeneratorService {
             }
         }
 
-        return DiaryResponseDto.from(diary, imageResDto);
+        return DiaryGeneratorResponseDto.from(diary, imageResDto);
     }
 
     private String buildQuery(ImageResDto imageFile, DiaryContentRequestDto dto) throws Exception {
@@ -185,7 +185,7 @@ public class DiaryGeneratorService {
 
     }
 
-    private static List<ImageResDto> getImageResDtos(List<Image> getImages) {
+    private List<ImageResDto> getImageResDtos(List<Image> getImages) {
         List<ImageResDto> imageResDto = new ArrayList<>();
 
         for (Image image : getImages) {
