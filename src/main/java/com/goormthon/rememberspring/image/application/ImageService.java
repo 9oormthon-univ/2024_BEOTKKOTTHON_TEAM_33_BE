@@ -39,7 +39,7 @@ public class ImageService {
         this.imageRepository = imageRepository;
     }
 
-    // 이미지 업로드
+    // 이미지 업로드 <- 파일 말고 url로 바꾸기
     @Transactional
     public List<ImageResDto> upload(String email, MultipartFile[] multipartFiles) throws IOException {
         Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
@@ -56,6 +56,23 @@ public class ImageService {
 
             storageSave(file, filePath, storage);
             Image image = imageSave(imgUrl, imageSequence, member);
+            responseImages.add(ImageResDto.from(image));
+
+            imageSequence++;
+        }
+
+        return responseImages;
+    }
+
+    @Transactional
+    public List<ImageResDto> urlUpload(String email, List<String> imageUrls) throws IOException {
+        Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
+
+        List<ImageResDto> responseImages = new ArrayList<>();
+        int imageSequence = 1;
+
+        for (String imageUrl : imageUrls) {
+            Image image = imageSave(imageUrl, imageSequence, member);
             responseImages.add(ImageResDto.from(image));
 
             imageSequence++;
@@ -95,7 +112,7 @@ public class ImageService {
 
     private Image imageSave(String imgUrl, int imageSequence, Member member) {
         Image image = Image.builder()
-                .convertImageName(imgUrl)
+                .convertImageUrl(imgUrl)
                 .imageSequence(imageSequence)
                 .member(member)
                 .build();

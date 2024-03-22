@@ -171,7 +171,7 @@ public class DiaryGeneratorService {
                         + "\ntitle, date, hashTag, contents를 Text JSON로 변경해서 반환한다."
                         + "\n}"
                         + "\n{\ntype: image_url, image_url: {\n "+
-            "url :" + imageFile.convertImageName() +"\n}"
+            "url :" + imageFile.convertImageUrl() +"\n}"
                 :
                 "\n{\ntype :  text, text : "
                         + "\ndate : " + new SimpleDateFormat("yyyy년 MM월 dd일").format(new Date())

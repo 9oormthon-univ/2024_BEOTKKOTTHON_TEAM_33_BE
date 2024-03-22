@@ -5,12 +5,12 @@ import lombok.Builder;
 
 @Builder
 public record ImageResDto(
-        String convertImageName,
+        String convertImageUrl,
         int imageSequence
 ) {
     public static ImageResDto from(Image image) {
         return ImageResDto.builder()
-                .convertImageName(image.getConvertImageName())
+                .convertImageUrl(image.getConvertImageUrl())
                 .imageSequence(image.getImageSequence())
                 .build();
     }

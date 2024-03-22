@@ -2,7 +2,15 @@ package com.goormthon.rememberspring.image.domain;
 
 import com.goormthon.rememberspring.diary.domain.entity.Diary;
 import com.goormthon.rememberspring.member.domain.Member;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,7 +25,7 @@ public class Image {
     @Column(name = "image_id")
     private Long id;
 
-    private String convertImageName;
+    private String convertImageUrl;
 
     private int imageSequence;
 
@@ -30,8 +38,8 @@ public class Image {
     private Diary diary;
 
     @Builder
-    private Image(String convertImageName, int imageSequence, Member member, Diary diary) {
-        this.convertImageName = convertImageName;
+    private Image(String convertImageUrl, int imageSequence, Member member, Diary diary) {
+        this.convertImageUrl = convertImageUrl;
         this.imageSequence = imageSequence;
         this.member = member;
         this.diary = diary;
