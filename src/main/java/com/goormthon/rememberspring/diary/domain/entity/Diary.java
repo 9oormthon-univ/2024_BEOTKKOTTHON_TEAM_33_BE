@@ -109,8 +109,9 @@ public class Diary extends BaseTimeEntity {
         this.diaryHashtagMapping.add(mapping);
     }
 
-    public void updateContent(String content) {
+    public void updateDiary(String content, String voiceText) {
         this.content = content;
+        this.voiceText = voiceText;
     }
 
     public void updateIsPublic() {
