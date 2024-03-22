@@ -5,6 +5,7 @@ import com.goormthon.rememberspring.diary.api.dto.request.DiaryRetryRequestDto;
 import com.goormthon.rememberspring.diary.api.dto.response.DiaryGeneratorResponseDto;
 import com.goormthon.rememberspring.diary.api.dto.response.DiaryResDto;
 import com.goormthon.rememberspring.diary.api.dto.response.HashtagDiariesResDto;
+import com.goormthon.rememberspring.diary.api.dto.response.PublicDiaryResDto;
 import com.goormthon.rememberspring.diary.application.DiaryGeneratorService;
 import com.goormthon.rememberspring.diary.application.DiaryService;
 import com.goormthon.rememberspring.global.template.RspTemplate;
@@ -17,8 +18,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -84,9 +87,9 @@ public class DiaryController {
             @ApiResponse(responseCode = "200", description = "성공"),
             @ApiResponse(responseCode = "401", description = "인증실패", content = @Content(schema = @Schema(example = "INVALID_HEADER or INVALID_TOKEN"))),
     })
-    @GetMapping("/diaries")
+    @GetMapping("/diaries/detail/{diaryId}")
     public RspTemplate<DiaryResDto> getDiary(@AuthenticationPrincipal String email,
-                                             @RequestParam("diary") Long diaryId) {
+                                             @PathVariable("diaryId") Long diaryId) {
         return new RspTemplate<>(HttpStatus.OK, "다이어리 상세 보기", diaryService.getDiary(email, diaryId));
     }
 
@@ -95,10 +98,65 @@ public class DiaryController {
             @ApiResponse(responseCode = "200", description = "성공"),
             @ApiResponse(responseCode = "401", description = "인증실패", content = @Content(schema = @Schema(example = "INVALID_HEADER or INVALID_TOKEN"))),
     })
-    @PostMapping("/diaries")
+    @PostMapping("/diaries/detail")
     public RspTemplate<Boolean> updatePublic(@AuthenticationPrincipal String email,
-                                             @RequestParam("diary") Long diaryId) {
+                                             @RequestParam("diaryId") Long diaryId) {
         return new RspTemplate<>(HttpStatus.OK, "다이어리 공유/취소", diaryService.updatePublic(email, diaryId));
+    }
+
+    @Operation(summary = "다이어리 함께보기", description = "공유된 다이어리를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증실패", content = @Content(schema = @Schema(example = "INVALID_HEADER or INVALID_TOKEN"))),
+    })
+    @GetMapping("/diaries/public")
+    public RspTemplate<Page<PublicDiaryResDto>> publicDiaries(@AuthenticationPrincipal String email,
+                                                              @Parameter(name = "filter", description = "정렬 기준 ex) 1: 최신순, 2: 인기순", in = ParameterIn.QUERY)
+                                                              @RequestParam(value = "filter") int filter,
+                                                              @Parameter(name = "year", description = "년 ex) 2024", in = ParameterIn.QUERY)
+                                                              @RequestParam(value = "year") int year,
+                                                              @Parameter(name = "month", description = "월 ex) 3", in = ParameterIn.QUERY)
+                                                              @RequestParam(value = "month") int month,
+                                                              @RequestParam(value = "page", defaultValue = "0") int page,
+                                                              @RequestParam(value = "size", defaultValue = "10") int size) {
+        String sortProperty = filter == 1 ? "diaryId" : "likeCount";
+
+        return new RspTemplate<>(HttpStatus.OK, "공유된 다이어리 조회", diaryService.publicAllDiaries(email, sortProperty, year, month, page, size));
+    }
+
+    @Operation(summary = "다이어리 함께보기 상세 보기", description = "함께보기 다이어리 상세를 불러옵니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "401", description = "인증실패", content = @Content(schema = @Schema(example = "INVALID_HEADER or INVALID_TOKEN"))),
+    })
+    @GetMapping("/diaries/public/detail/{diaryId}")
+    public RspTemplate<PublicDiaryResDto> getPublicDiary(@AuthenticationPrincipal String email,
+                                                         @PathVariable("diaryId") Long diaryId) {
+        return new RspTemplate<>(HttpStatus.OK, "다이어리 상세 보기", diaryService.getPublicDiary(email, diaryId));
+    }
+
+    @Operation(summary = "다이어리 좋아요", description = "다이어리 좋아요를 등록합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "401", description = "인증실패", content = @Content(schema = @Schema(example = "INVALID_HEADER or INVALID_TOKEN"))),
+    })
+    @PostMapping("/diaries/public/detail")
+    public RspTemplate<String> updateLikeDiary(@AuthenticationPrincipal String email,
+                                             @RequestParam Long diaryId) {
+        diaryService.likeDiary(email, diaryId);
+        return new RspTemplate<>(HttpStatus.OK, "다이어리 좋아요", "다이어리 좋아요 성공");
+    }
+
+    @Operation(summary = "다이어리 좋아요 취소", description = "다이어리 좋아요를 취소합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "성공"),
+            @ApiResponse(responseCode = "401", description = "인증실패", content = @Content(schema = @Schema(example = "INVALID_HEADER or INVALID_TOKEN"))),
+    })
+    @DeleteMapping("/diaries/public/detail")
+    public RspTemplate<String> updateCancelLikeDiary(@AuthenticationPrincipal String email,
+                                                     @RequestParam Long diaryId) {
+        diaryService.cancelLikeDiary(email, diaryId);
+        return new RspTemplate<>(HttpStatus.OK, "다이어리 좋아요 취소", "다이어리 좋아요 취소 성공");
     }
 
 }
