@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.goormthon.rememberspring.diary.api.dto.request.ChatGptRequestDto;
 import com.goormthon.rememberspring.diary.api.dto.request.DiaryContentRequestDto;
+import com.goormthon.rememberspring.diary.api.dto.request.DiaryRetryRequestDto;
 import com.goormthon.rememberspring.diary.api.dto.response.ChatGptResponseDto;
 import com.goormthon.rememberspring.diary.api.dto.response.DiaryContentResponseDto;
 import com.goormthon.rememberspring.diary.api.dto.response.DiaryGeneratorResponseDto;
@@ -104,15 +105,15 @@ public class DiaryGeneratorService {
     }
 
     @Transactional
-    public DiaryGeneratorResponseDto retry(String email, Long diaryId) throws Exception {
+    public DiaryGeneratorResponseDto retry(String email, DiaryRetryRequestDto diaryRetryRequestDto) throws Exception {
         Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
-        Diary diary = diaryRepository.findById(diaryId).orElseThrow(DiaryNotFoundException::new);
+        Diary diary = diaryRepository.findById(diaryRetryRequestDto.getDiaryId()).orElseThrow(DiaryNotFoundException::new);
         List<Image> getImages = imageRepository.findByDiaryAndMember(diary, member);
 
         DiaryContentRequestDto requestDto = new DiaryContentRequestDto(
                 diary.getDiaryType(),
                 diary.getEmotion(),
-                diary.getVoiceText()
+                diaryRetryRequestDto.getVoiceText()
         );
 
         List<ImageResDto> imageResDto = getImageResDtos(getImages);
@@ -131,7 +132,7 @@ public class DiaryGeneratorService {
             throw new RuntimeException(e);
         }
 
-        diary.updateContent(diaryContentResponseDto.getContents());
+        diary.updateDiary(diaryContentResponseDto.getContents(), diaryRetryRequestDto.getVoiceText());
 
         // 해시태그 저장
         for (String tagName : diaryContentResponseDto.getHashtag()) {

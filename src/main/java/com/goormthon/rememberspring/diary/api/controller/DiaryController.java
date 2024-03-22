@@ -1,6 +1,7 @@
 package com.goormthon.rememberspring.diary.api.controller;
 
 import com.goormthon.rememberspring.diary.api.dto.request.DiaryContentRequestDto;
+import com.goormthon.rememberspring.diary.api.dto.request.DiaryRetryRequestDto;
 import com.goormthon.rememberspring.diary.api.dto.response.DiaryGeneratorResponseDto;
 import com.goormthon.rememberspring.diary.api.dto.response.DiaryResDto;
 import com.goormthon.rememberspring.diary.api.dto.response.HashtagDiariesResDto;
@@ -51,8 +52,8 @@ public class DiaryController {
     })
     @PostMapping(value = "/retry")
     public RspTemplate<DiaryGeneratorResponseDto> retryDiary(@AuthenticationPrincipal String email,
-                                                             @RequestParam(name = "diary") Long diaryId) throws Exception {
-        return new RspTemplate<>(HttpStatus.OK, "일기 재생성", diaryGeneratorService.retry(email, diaryId)
+                                                             @RequestBody DiaryRetryRequestDto requestDto) throws Exception {
+        return new RspTemplate<>(HttpStatus.OK, "일기 재생성", diaryGeneratorService.retry(email, requestDto)
         );
     }
 
