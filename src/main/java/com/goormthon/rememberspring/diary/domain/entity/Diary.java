@@ -64,6 +64,9 @@ public class Diary extends BaseTimeEntity {
     @Column(nullable = false)
     private String content;
 
+    @Column(nullable = false)
+    private int likeCount;
+
     // 해쉬태그
     @OneToMany(mappedBy = "diary", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<DiaryHashtagMapping> diaryHashtagMapping = new HashSet<>();
@@ -82,6 +85,7 @@ public class Diary extends BaseTimeEntity {
         this.emotion = emotion;
         this.voiceText = voiceText;
         this.content = content;
+        this.likeCount = 0;
         this.images = images;
     }
 
@@ -115,5 +119,17 @@ public class Diary extends BaseTimeEntity {
 
     public void updateIsPublic() {
         this.isPublic = !isPublic;
+    }
+
+    public void updateLikeCount() {
+        this.likeCount++;
+    }
+
+    public void updateCancelLikeCount() {
+        if (this.likeCount <= 0) {
+            this.likeCount = 0;
+        } else {
+            this.likeCount--;
+        }
     }
 }

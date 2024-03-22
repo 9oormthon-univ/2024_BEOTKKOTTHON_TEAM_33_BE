@@ -2,9 +2,12 @@ package com.goormthon.rememberspring.diary.application;
 
 import com.goormthon.rememberspring.diary.api.dto.response.DiaryResDto;
 import com.goormthon.rememberspring.diary.api.dto.response.HashtagDiariesResDto;
+import com.goormthon.rememberspring.diary.api.dto.response.PublicDiaryResDto;
 import com.goormthon.rememberspring.diary.domain.entity.Diary;
 import com.goormthon.rememberspring.diary.domain.entity.DiaryHashtagMapping;
+import com.goormthon.rememberspring.diary.domain.entity.DiaryLikeMember;
 import com.goormthon.rememberspring.diary.domain.repository.DiaryHashtagRepository;
+import com.goormthon.rememberspring.diary.domain.repository.DiaryLikeMemberRepository;
 import com.goormthon.rememberspring.diary.domain.repository.DiaryRepository;
 import com.goormthon.rememberspring.diary.excepion.DiaryNotFoundException;
 import com.goormthon.rememberspring.member.domain.Member;
@@ -32,6 +35,7 @@ public class DiaryService {
     private final DiaryRepository diaryRepository;
     private final MemberRepository memberRepository;
     private final DiaryHashtagRepository diaryHashtagRepository;
+    private final DiaryLikeMemberRepository diaryLikeMemberRepository;
 
     // 모아서 보기
     public List<HashtagDiariesResDto> gatherAllDiaries(String email, int page, int size) {
@@ -121,5 +125,55 @@ public class DiaryService {
     }
 
     // 함께보기
+    public Page<PublicDiaryResDto> publicAllDiaries(String email, String sortProperty, int year, int month, int page, int size) {
+        Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
+        Page<Diary> diaries = diaryRepository.findAllByIsPublicAndYearAndMonth(
+                year,
+                month,
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortProperty))
+        );
+
+        return diaries.map(diary -> mapToPublicDiary(diary, member));
+    }
+
+    private PublicDiaryResDto mapToPublicDiary(Diary diary, Member member) {
+        boolean isLike = diaryLikeMemberRepository.existsByDiaryAndMember(diary, member);
+        int likeCount = diaryLikeMemberRepository.countByDiary(diary);
+
+                             return PublicDiaryResDto.of(diary, isLike, likeCount);
+    }
+
+    // 함께보기 다이어리 상세보기
+    public PublicDiaryResDto getPublicDiary(String email, Long diaryId) {
+        Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
+        Diary diary = diaryRepository.findById(diaryId).orElseThrow(DiaryNotFoundException::new);
+
+        boolean isLike = diaryLikeMemberRepository.existsByDiaryAndMember(diary, member);
+        int likeCount = diaryLikeMemberRepository.countByDiary(diary);
+
+        return PublicDiaryResDto.of(diary, isLike, likeCount);
+    }
+
+    // 다이어리 좋아요
+    @Transactional
+    public void likeDiary(String email, Long diaryId) {
+        Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
+        Diary diary = diaryRepository.findById(diaryId).orElseThrow(DiaryNotFoundException::new);
+
+        diary.updateLikeCount();
+        diaryLikeMemberRepository.save(DiaryLikeMember.toEntity(diary, member));
+    }
+
+    // 다이어리 취소
+    @Transactional
+    public void cancelLikeDiary(String email, Long diaryId) {
+        Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
+        Diary diary = diaryRepository.findById(diaryId).orElseThrow(DiaryNotFoundException::new);
+
+        DiaryLikeMember diaryLikeMember = diaryLikeMemberRepository.findByDiaryAndMember(diary, member).orElseThrow();
+
+        diary.updateCancelLikeCount();
+        diaryLikeMemberRepository.delete(diaryLikeMember);
+    }
 
 }
