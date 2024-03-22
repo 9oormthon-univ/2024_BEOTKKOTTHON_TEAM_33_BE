@@ -140,7 +140,7 @@ public class DiaryService {
         boolean isLike = diaryLikeMemberRepository.existsByDiaryAndMember(diary, member);
         int likeCount = diaryLikeMemberRepository.countByDiary(diary);
 
-                             return PublicDiaryResDto.of(diary, isLike, likeCount);
+        return PublicDiaryResDto.of(diary, isLike, likeCount);
     }
 
     // 함께보기 다이어리 상세보기
