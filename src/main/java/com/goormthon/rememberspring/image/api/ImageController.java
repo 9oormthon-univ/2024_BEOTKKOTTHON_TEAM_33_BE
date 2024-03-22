@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
@@ -38,6 +39,17 @@ public class ImageController {
     public RspTemplate<List<ImageResDto>> imageUpload(@AuthenticationPrincipal String email,
                                                  @RequestPart("multipartFiles") MultipartFile[] multipartFiles) throws IOException {
         return new RspTemplate<>(HttpStatus.OK, "이미지 업로드", imageService.upload(email, multipartFiles));
+    }
+
+    @Operation(summary = "이미지 URL 업로드", description = "이미지 URL 업로드 합니다")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "업로드 성공"),
+            @ApiResponse(responseCode = "401", description = "인증실패", content = @Content(schema = @Schema(example = "INVALID_HEADER or INVALID_TOKEN"))),
+    })
+    @PostMapping("/upload/url")
+    public RspTemplate<List<ImageResDto>> imageURLUpload(@AuthenticationPrincipal String email,
+                                                      @RequestBody List<String> imageUrls) throws IOException {
+        return new RspTemplate<>(HttpStatus.OK, "이미지 업로드", imageService.urlUpload(email, imageUrls));
     }
 
     @Operation(summary = "이미지 전체 조회", description = "이미지를 조회합니다.")
