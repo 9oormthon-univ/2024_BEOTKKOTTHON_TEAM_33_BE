@@ -164,7 +164,7 @@ public class DiaryGeneratorService {
                         + "\nhashtag : [String Array]"
                         + "\ncontents : %s"
                             + "\n"
-                        + "\ntitle은 일기 제목이며 10자로 제한한다."
+                        + "\ntitle은 일기 제목이며 10자로 제한한다. 자연스러운 일기제목이여야 한다."
                         + "\nhashtag 일기 내용과 관련 있는 해시태그이며, 2~4개의 해시태그를 생성하고, 하나의 해시태그는 5자로 제한한다."
                         + "해시태그 단어 앞에는 반드시 #을 붙인다."
                         + "\ncontents는 일기 내용이며, 350자로 제한한다. 일기 내용은 반드시 반말로 반환해야만 한다."
@@ -180,7 +180,7 @@ public class DiaryGeneratorService {
                 +       "\n내가 느낀 감정 : " + dto.getEmotion()
                 +       "\n질문 : 일기타입, 내가 느낀 감정, 이미지를 바탕으로 일기를 구체적으로 작성해줘.}"
                 + "\n{\ntype: image_url, image_url: {\n "+
-                "url : https://i.pinimg.com/474x/8b/f3/a4/8bf3a4600ff3c92650605434da3c1b5c.jpg\n}"
+                        "url :" + imageFile.convertImageUrl() +"\n}"
                 ;
 
     }
