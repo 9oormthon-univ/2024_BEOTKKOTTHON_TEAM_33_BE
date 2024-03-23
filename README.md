@@ -33,19 +33,14 @@
 
 ## 📹 Demo
 
+
 ### Mobile Page
-
-****| **** | **** |****
------|------|------|-----
-1| 2    | 3    |4
-1| 2    | 3    |4
-
 <br>
 
 
 
 ## 💻 Architecture
-
+<img alt="api_document" src = "https://github.com/goormthon-Univ/2024_BEOTKKOTTHON_TEAM_33_BE/blob/yeonjae/assets/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7%202024-03-22%20%EC%98%A4%ED%9B%84%2010.56.01.png?raw=true" />
 <br><br>
 
 
@@ -68,13 +63,13 @@
 
 
 
-## 📗 API
-
+## 📗 API Document
+<img alt="api_document" src = "https://github.com/goormthon-Univ/2024_BEOTKKOTTHON_TEAM_33_BE/blob/yeonjae/assets/%EC%8A%A4%ED%81%AC%EB%A6%B0%EC%83%B7%202024-03-23%20%EC%98%A4%ED%9B%84%204.35.59.png?raw=true" />
 
 
 ## 👨‍👩‍👧‍👧 Team
 
-|           [나윤주]()           | [이승현]() | [박재현]() | [최기웅]() | [정연재]() |               [한예은]()               |
-|:---------------------------:|:--------------------------------------:|:--------------------------------:|:---------------------------------:|:-----------------------------------:|:-----------------------------------:|
-| <img width = "300" src =""> |      <img width = "300" src ="">       |   <img width = "300" src ="">    |    <img width = "300" src ="">    |     <img width = "300" src ="">     |       <img width = "300" src ="">   |
-|       Project Manager       |           Frontend Developer           |        Frontend Developer        |         Backend Developer         |                    Backend Developer             |           Designer     |
+|           [나윤주]()           |                                                             [이승현](https://github.com/seungsimdang)                                                              | [박재현](https://github.com/JaeHyun137?tab=overview&from=2024-03-01&to=2024-03-23) | [최기웅](https://github.com/giwoong01) | [정연재](https://github.com/zzangjyj0818) |               [한예은]()               |
+|:---------------------------:|:---------------------------------------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------:|:---------------------------------:|:-----------------------------------:|:-----------------------------------:|
+| <img width = "300" src =""> |      |    <img width = "300" src ="">    |          |       <img width = "300" src ="">   |
+|       Project Manager       |                                                                       Frontend Developer                                                                        |        Frontend Developer        |         Backend Developer         |                    Backend Developer             |           Designer     |
