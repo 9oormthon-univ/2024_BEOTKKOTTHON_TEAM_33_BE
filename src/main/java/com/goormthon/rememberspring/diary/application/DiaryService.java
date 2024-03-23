@@ -189,11 +189,11 @@ public class DiaryService {
         Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
         Diary diary = diaryRepository.findById(diaryId).orElseThrow(DiaryNotFoundException::new);
 
-        DiaryLikeMember diaryLikeMember = diaryLikeMemberRepository.findByDiaryAndMember(diary, member).orElseThrow();
-
         if (!diaryLikeMemberRepository.existsByDiaryAndMember(diary, member)) {
             throw new ExistsLikeDiaryException("존재하는 좋아요가 없습니다.");
         }
+
+        DiaryLikeMember diaryLikeMember = diaryLikeMemberRepository.findByDiaryAndMember(diary, member).orElseThrow();
 
         diary.updateCancelLikeCount();
         diaryLikeMemberRepository.delete(diaryLikeMember);
