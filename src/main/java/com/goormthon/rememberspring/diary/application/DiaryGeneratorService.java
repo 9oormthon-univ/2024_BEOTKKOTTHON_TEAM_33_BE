@@ -2,7 +2,6 @@ package com.goormthon.rememberspring.diary.application;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.goormthon.rememberspring.diary.api.dto.request.ChatGptRequestDto;
 import com.goormthon.rememberspring.diary.api.dto.request.DiaryContentRequestDto;
 import com.goormthon.rememberspring.diary.api.dto.request.DiaryRetryRequestDto;
 import com.goormthon.rememberspring.diary.api.dto.response.ChatGptResponseDto;
@@ -20,21 +19,27 @@ import com.goormthon.rememberspring.image.domain.repository.ImageRepository;
 import com.goormthon.rememberspring.member.domain.Member;
 import com.goormthon.rememberspring.member.domain.repository.MemberRepository;
 import com.goormthon.rememberspring.member.exception.MemberNotFoundException;
-import java.text.SimpleDateFormat;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
-
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class DiaryGeneratorService {
 
     @Value("${spring.openai.model}")
@@ -42,6 +47,9 @@ public class DiaryGeneratorService {
 
     @Value("${spring.openai.api.url}")
     private String apiURL;
+
+    @Value("${spring.openai.api.key}")
+    private String apiKey;
 
     @Autowired
     private RestTemplate template;
@@ -61,18 +69,9 @@ public class DiaryGeneratorService {
 
         List<ImageResDto> imageResDto = getImageResDtos(getImages);
 
-        // 리스트의 첫 번째 값(이미지)가 대표 이미지 이므로, 리스트의 첫 번째 값을 보냄.
-        // 프롬프트 엔지니어링 -> 감정, 일기 타입, 음성 텍스트, 이미지를 보내, 응답값 받아옴
-        ChatGptRequestDto request = ChatGptRequestDto.builder()
-                .model(model)
-                .prompt(buildQuery(imageResDto.get(0), diaryContentRequestDto))
-                .build();
-
-        ChatGptResponseDto chatGptResponseDto = template.postForObject(apiURL, request, ChatGptResponseDto.class);
-
         DiaryContentResponseDto diaryContentResponseDto;
         try {
-            diaryContentResponseDto = objectMapper.readValue(parseJson(chatGptResponseDto), DiaryContentResponseDto.class);
+            diaryContentResponseDto = objectMapper.readValue(parseJson(buildQuery(imageResDto.get(0), diaryContentRequestDto)), DiaryContentResponseDto.class);
         } catch (JsonParseException e) {
             throw new RuntimeException(e);
         }
@@ -118,16 +117,9 @@ public class DiaryGeneratorService {
 
         List<ImageResDto> imageResDto = getImageResDtos(getImages);
 
-        ChatGptRequestDto request = ChatGptRequestDto.builder()
-                .model(model)
-                .prompt(buildQuery(imageResDto.get(0), requestDto))
-                .build();
-
-        ChatGptResponseDto chatGptResponseDto = template.postForObject(apiURL, request, ChatGptResponseDto.class);
-
         DiaryContentResponseDto diaryContentResponseDto;
         try {
-            diaryContentResponseDto = objectMapper.readValue(parseJson(chatGptResponseDto), DiaryContentResponseDto.class);
+            diaryContentResponseDto = objectMapper.readValue(parseJson(buildQuery(imageResDto.get(0), requestDto)), DiaryContentResponseDto.class);
         } catch (JsonParseException e) {
             throw new RuntimeException(e);
         }
@@ -150,39 +142,92 @@ public class DiaryGeneratorService {
         return DiaryGeneratorResponseDto.from(diary, imageResDto);
     }
 
-    private String buildQuery(ImageResDto imageFile, DiaryContentRequestDto dto) throws Exception {
+    private ChatGptResponseDto buildQuery(ImageResDto imageFile, DiaryContentRequestDto dto) throws IOException, InterruptedException {
+        HttpClient client = HttpClient.newHttpClient();
+        String prompt = dto.getVoiceText() != null ? "{"
+                + "\"model\": \"" + model + "\", "
+                + "\"messages\": ["
+                +     "{"
+                +         "\"role\": \"user\","
+                +         "\"content\": ["
+                +             "{"
+                +                 "\"type\": \"text\","
+                +                 "\"text\": \"일기타입은 " +  dto.getDiaryType()
+                +                             "내 감정 상태는 " + dto.getEmotion()
+                +                             "음성텍스트는 " + dto.getVoiceText() + " 이 3가지로 일기를 작성해줘."
+                +                             "반환은 title(String), hashtag(List), contents(String)이고 정확하게 JSON 으로 반환해줘."
+                +                             "title은 10자로 제한하고, 이미지와 잘 어울리는 것으로 만들어줘."
+                +                             "contents는 350자로 제한할게."
+                +                             "hashtag를 반환할 때는 앞에 #을 꼭 붙여주고, 4개 이하의 해시태그를 생성해줘. 해시태그는 4자로 제한할게."
+                +                             "너의 반환값인 content 안에 JSON 반환 이외에 말은 안해도돼.\""
+                +             "},"
+                +             "{"
+                +                 "\"type\": \"image_url\","
+                +                 "\"image_url\": {"
+                +                     "\"url\": \"" + imageFile.convertImageUrl() + "\""
+                +                 "}"
+                +             "}"
+                +         "]"
+                +     "}"
+                + "]"
+                + "}" : "{"
+                + "\"model\": \"" + model + "\", "
+                + "\"messages\": ["
+                +     "{"
+                +         "\"role\": \"user\","
+                +         "\"content\": ["
+                +             "{"
+                +                 "\"type\": \"text\","
+                +                 "\"text\": \"일기타입은 " +  dto.getDiaryType()
+                +                             "내 감정 상태는 " + dto.getEmotion()
+                +                             "이 2가지로 일기를 작성해줘."
+                +                             "반환은 title(String), hashtag(List), contents(String)이고 정확하게 JSON 으로 반환해줘."
+                +                             "title은 10자로 제한하고, 이미지와 잘 어울리는 것으로 만들어줘."
+                +                             "contents는 350자로 제한할게."
+                +                             "hashtag를 반환할 때는 앞에 #을 꼭 붙여주고, 4개 이하의 해시태그를 생성해줘. 해시태그는 4자로 제한할게."
+                +                             "너의 반환값인 content 안에 JSON 반환 이외에 말은 안해도돼.\""
+                +             "},"
+                +             "{"
+                +                 "\"type\": \"image_url\","
+                +                 "\"image_url\": {"
+                +                     "\"url\": \"" + imageFile.convertImageUrl() + "\""
+                +                 "}"
+                +             "}"
+                +         "]"
+                +     "}"
+                + "]"
+                + "}";
 
-        return dto.getVoiceText() != null ?
-                "\n{\ntype :  text, text : "
-                        + "\n일기 타입 : " + dto.getDiaryType()
-                        + "\n내가 느낀 감정 : " + dto.getEmotion()
-                        + "\n음성 텍스트 : " + dto.getVoiceText()
-                        + "\n질문 : 일기타입, 내가 느낀 감정, 음성텍스트, 이미지를 바탕으로 일기를 구체적으로 작성해줘."
-                        + "\n반환 형식 : "
-                        + "\ntitle : %s"
-                        + "\ndate : " + new SimpleDateFormat("yyyy년 MM월 dd일").format(new Date())
-                        + "\nhashtag : [String Array]"
-                        + "\ncontents : %s"
-                            + "\n"
-                        + "\ntitle은 일기 제목이며 10자로 제한한다. 자연스러운 일기제목이여야 한다."
-                        + "\nhashtag 일기 내용과 관련 있는 해시태그이며, 2~4개의 해시태그를 생성하고, 하나의 해시태그는 5자로 제한한다."
-                        + "해시태그 단어 앞에는 반드시 #을 붙인다."
-                        + "\ncontents는 일기 내용이며, 350자로 제한한다. 일기 내용은 반드시 반말로 반환해야만 한다."
-                        + "\ndate는 정해진 형식을 반환하면 된다."
-                        + "\ntitle, date, hashTag, contents를 Text JSON로 변경해서 반환한다."
-                        + "\n}"
-                        + "\n{\ntype: image_url, image_url: {\n "+
-            "url :" + imageFile.convertImageUrl() +"\n}"
-                :
-                "\n{\ntype :  text, text : "
-                        + "\ndate : " + new SimpleDateFormat("yyyy년 MM월 dd일").format(new Date())
-                +       "\n일기 타입 : " + dto.getDiaryType()
-                +       "\n내가 느낀 감정 : " + dto.getEmotion()
-                +       "\n질문 : 일기타입, 내가 느낀 감정, 이미지를 바탕으로 일기를 구체적으로 작성해줘.}"
-                + "\n{\ntype: image_url, image_url: {\n "+
-                        "url :" + imageFile.convertImageUrl() +"\n}"
-                ;
+        HttpRequest request = null;
 
+        try {
+            request = HttpRequest.newBuilder()
+                    .uri(URI.create(apiURL))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization",  String.format("Bearer %s", apiKey))
+                    .POST(BodyPublishers.ofString(prompt))
+                    .build();
+        } catch (RuntimeException e) {
+            request = HttpRequest.newBuilder()
+                    .uri(URI.create(apiURL))
+                    .header("Content-Type", "application/json")
+                    .header("Authorization",  String.format("Bearer %s", apiKey))
+                    .POST(BodyPublishers.ofString(prompt))
+                    .build();
+        }
+
+        // HttpRequest를 전송하고 HttpResponse를 받음
+        HttpResponse<String> response = client.send(request, BodyHandlers.ofString());
+
+        log.info(response.body());
+        ChatGptResponseDto chatGptResponseDto;
+        try {
+            chatGptResponseDto = objectMapper.readValue(response.body(), ChatGptResponseDto.class);
+        } catch (JsonParseException e) {
+            throw new RuntimeException(e);
+        }
+
+        return chatGptResponseDto;
     }
 
     private List<ImageResDto> getImageResDtos(List<Image> getImages) {
