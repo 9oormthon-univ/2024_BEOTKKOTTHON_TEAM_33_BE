@@ -191,7 +191,7 @@ public class DiaryService {
 
         DiaryLikeMember diaryLikeMember = diaryLikeMemberRepository.findByDiaryAndMember(diary, member).orElseThrow();
 
-        if (diaryLikeMemberRepository.existsByDiaryAndMember(diary, member)) {
+        if (!diaryLikeMemberRepository.existsByDiaryAndMember(diary, member)) {
             throw new ExistsLikeDiaryException("존재하는 좋아요가 없습니다.");
         }
 
