@@ -54,8 +54,8 @@
 - Frontend : React, React-Query, TypeScript
 - Backend : Spring Boot, Java
 - Open AI : ChatGPT
-- Deployment : Google Cloud Platform
-- API Tool : Postman
+- Deployment : Google Cloud Platform, Vercel
+- API Test Tool : Postman
 - API Documentation : Swagger
 - Version control : Github
 ```
