@@ -167,7 +167,7 @@ public class DiaryGeneratorService {
                         + "\ntitle은 일기 제목이며 10자로 제한한다."
                         + "\nhashtag 일기 내용과 관련 있는 해시태그이며, 2~4개의 해시태그를 생성하고, 하나의 해시태그는 5자로 제한한다."
                         + "해시태그 단어 앞에는 반드시 #을 붙인다."
-                        + "\ncontents는 일기 내용이며, 350자로 제한한다."
+                        + "\ncontents는 일기 내용이며, 350자로 제한한다. 일기 내용은 반드시 반말로 반환해야만 한다."
                         + "\ndate는 정해진 형식을 반환하면 된다."
                         + "\ntitle, date, hashTag, contents를 Text JSON로 변경해서 반환한다."
                         + "\n}"
