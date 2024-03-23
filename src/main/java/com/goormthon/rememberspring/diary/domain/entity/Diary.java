@@ -57,7 +57,6 @@ public class Diary extends BaseTimeEntity {
     private Emotion emotion;
 
     // 음성텍스트
-    @Column(nullable = false)
     private String voiceText;
 
     // 글 내용
