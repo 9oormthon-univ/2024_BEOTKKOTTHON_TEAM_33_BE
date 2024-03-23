@@ -9,7 +9,9 @@ import com.goormthon.rememberspring.diary.domain.entity.DiaryLikeMember;
 import com.goormthon.rememberspring.diary.domain.repository.DiaryHashtagRepository;
 import com.goormthon.rememberspring.diary.domain.repository.DiaryLikeMemberRepository;
 import com.goormthon.rememberspring.diary.domain.repository.DiaryRepository;
+import com.goormthon.rememberspring.diary.excepion.DiaryAccessDeniedException;
 import com.goormthon.rememberspring.diary.excepion.DiaryNotFoundException;
+import com.goormthon.rememberspring.diary.excepion.ExistsLikeDiaryException;
 import com.goormthon.rememberspring.member.domain.Member;
 import com.goormthon.rememberspring.member.domain.repository.MemberRepository;
 import com.goormthon.rememberspring.member.exception.MemberNotFoundException;
@@ -110,6 +112,10 @@ public class DiaryService {
         Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
         Diary diary = diaryRepository.findById(diaryId).orElseThrow(DiaryNotFoundException::new);
 
+        if (!diary.getMember().getMemberId().equals(member.getMemberId()) && !diary.isPublic()) {
+            throw new DiaryAccessDeniedException("공유되지 않은 다이어리입니다!");
+        }
+
         return DiaryResDto.from(diary);
     }
 
@@ -118,6 +124,11 @@ public class DiaryService {
     public boolean updatePublic(String email, Long diaryId) {
         Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
         Diary diary = diaryRepository.findById(diaryId).orElseThrow(DiaryNotFoundException::new);
+
+        // 다이어리를 공유할 떄, 작성자 본인이 아니면 조작이 불가능하다. 예외처리
+        if (!diary.getMember().getMemberId().equals(member.getMemberId())) {
+            throw new DiaryAccessDeniedException();
+        }
 
         diary.updateIsPublic();
 
@@ -151,6 +162,10 @@ public class DiaryService {
         boolean isLike = diaryLikeMemberRepository.existsByDiaryAndMember(diary, member);
         int likeCount = diaryLikeMemberRepository.countByDiary(diary);
 
+        if (!diary.isPublic()) {
+            throw new DiaryAccessDeniedException("공유되지 않은 다이어리입니다!");
+        }
+
         return PublicDiaryResDto.of(diary, isLike, likeCount);
     }
 
@@ -159,6 +174,10 @@ public class DiaryService {
     public void likeDiary(String email, Long diaryId) {
         Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
         Diary diary = diaryRepository.findById(diaryId).orElseThrow(DiaryNotFoundException::new);
+
+        if (diaryLikeMemberRepository.existsByDiaryAndMember(diary, member)) {
+            throw new ExistsLikeDiaryException("이미 좋아요를 눌렀습니다.");
+        }
 
         diary.updateLikeCount();
         diaryLikeMemberRepository.save(DiaryLikeMember.toEntity(diary, member));
@@ -172,8 +191,17 @@ public class DiaryService {
 
         DiaryLikeMember diaryLikeMember = diaryLikeMemberRepository.findByDiaryAndMember(diary, member).orElseThrow();
 
+        if (diaryLikeMemberRepository.existsByDiaryAndMember(diary, member)) {
+            throw new ExistsLikeDiaryException("존재하는 좋아요가 없습니다.");
+        }
+
         diary.updateCancelLikeCount();
         diaryLikeMemberRepository.delete(diaryLikeMember);
     }
+
+    // 다이어리 수정
+
+
+    // 다이어리 삭제
 
 }
