@@ -38,7 +38,7 @@ public class AuthController {
     })
     @PostMapping("/kakao/token")
     public RspTemplate<TokenDto> generateAccessAndRefreshToken(@RequestBody TokenReqDto tokenReqDto) {
-        UserInfo userInfo = authService.getUserInfo(tokenReqDto.authCode());
+        UserInfo userInfo = authService.getUserInfo(tokenReqDto.idToken());
         MemberLoginResDto getMemberDto = authMemberService.saveUserInfo(userInfo);
         TokenDto getToken = tokenService.getToken(getMemberDto);
 
