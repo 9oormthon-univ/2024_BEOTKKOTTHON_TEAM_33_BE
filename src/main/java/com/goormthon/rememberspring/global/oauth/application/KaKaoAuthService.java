@@ -43,9 +43,9 @@ public class KaKaoAuthService implements AuthService {
         this.objectMapper = objectMapper;
     }
 
-    public UserInfo getUserInfo(String code) {
-        KakaoTokenResponse kaKaoIdToken = getKaKaoIdToken(code);
-        String decodePayload = getDecodePayload(kaKaoIdToken.getIdToken());
+    public UserInfo getUserInfo(String idToken) {
+//        KakaoTokenResponse kaKaoIdToken = getKaKaoIdToken(code);
+        String decodePayload = getDecodePayload(idToken);
 
         UserInfo userInfo;
         try {
