@@ -154,31 +154,43 @@ public class DiaryGeneratorService {
 
         return dto.getVoiceText() != null ?
                 "\n{\ntype :  text, text : "
-                        + "\n일기 타입 : " + dto.getDiaryType()
-                        + "\n내가 느낀 감정 : " + dto.getEmotion()
-                        + "\n음성 텍스트 : " + dto.getVoiceText()
-                        + "\n질문 : 일기타입, 내가 느낀 감정, 음성텍스트, 이미지를 바탕으로 일기를 구체적으로 작성해줘."
-                        + "\n반환 형식 : "
-                        + "\ntitle : %s"
-                        + "\ndate : " + new SimpleDateFormat("yyyy년 MM월 dd일").format(new Date())
-                        + "\nhashtag : [String Array]"
-                        + "\ncontents : %s"
+                        + "\n 일기 타입 : " + dto.getDiaryType()
+                        + "\n 내가 느낀 감정 : " + dto.getEmotion()
+                        + "\n 음성 텍스트 : " + dto.getVoiceText()
+                        + "\n 질문 : 일기타입, 내가 느낀 감정, 음성텍스트, 이미지를 바탕으로 일기를 구체적으로 작성해줘."
+                        + "\n 반환 형식 : "
+                        + "\n `title` : String"
+                        + "\n `date` : " + new SimpleDateFormat("yyyy년 MM월 dd일").format(new Date())
+                        + "\n `hashtag` : [String Array]"
+                        + "\n `contents` : %s"
                             + "\n"
-                        + "\ntitle은 일기 제목이며 10자로 제한한다. 자연스러운 일기제목이여야 한다."
-                        + "\nhashtag 일기 내용과 관련 있는 해시태그이며, 2~4개의 해시태그를 생성하고, 하나의 해시태그는 5자로 제한한다."
-                        + "해시태그 단어 앞에는 반드시 #을 붙인다."
-                        + "\ncontents는 일기 내용이며, 350자로 제한한다. 일기 내용은 반드시 반말로 반환해야만 한다."
-                        + "\ndate는 정해진 형식을 반환하면 된다."
-                        + "\ntitle, date, hashTag, contents를 Text JSON로 변경해서 반환한다."
+                        + "\n title 은 일기 제목이며 10자로 제한한다. 자연스러운 일기제목이여야 한다."
+                        + "\n hashtag 일기 내용과 관련 있는 해시태그이며, 2~4개의 해시태그를 생성하고, 하나의 해시태그는 5자로 제한한다."
+                        + " 해시태그 단어 앞에는 반드시 #을 붙인다."
+                        + "\n contents 는 일기 내용이며, 350자로 제한한다. 일기 내용은 반드시 반말로 반환해야만 한다."
+                        + "\n date 는 정해진 형식을 반환하면 된다."
+                        + "\n title, date, hashTag, contents 를 Text JSON로 변경해서 반환한다."
                         + "\n}"
                         + "\n{\ntype: image_url, image_url: {\n "+
             "url :" + imageFile.convertImageUrl() +"\n}"
                 :
-                "\n{\ntype :  text, text : "
-                        + "\ndate : " + new SimpleDateFormat("yyyy년 MM월 dd일").format(new Date())
-                +       "\n일기 타입 : " + dto.getDiaryType()
-                +       "\n내가 느낀 감정 : " + dto.getEmotion()
-                +       "\n질문 : 일기타입, 내가 느낀 감정, 이미지를 바탕으로 일기를 구체적으로 작성해줘.}"
+                "\n{\ntype :  text, text : {"
+                        + "\n 일기 타입 : " + dto.getDiaryType()
+                        + "\n 내가 느낀 감정 : " + dto.getEmotion()
+                        + "\n 질문 : 일기타입, 내가 느낀 감정, 이미지를 바탕으로 일기를 구체적으로 작성해줘. 현재 음성텍스트가 없으므로, 최대한 이미지를 자세히 분석해야한다."
+                        + "}\n 반환 형식 : {"
+                        + "\n `title` : String"
+                        + "\n `date` : " + new SimpleDateFormat("yyyy년 MM월 dd일").format(new Date())
+                        + "\n `hashtag` : [String Array]"
+                        + "\n `contents` : %s"
+                        + "\n}"
+                        + "\n 조건 : title 은 일기 제목이며 10자로 제한한다. 자연스러운 일기제목이여야 한다."
+                        + "\n 조건 : hashtag 일기 내용과 관련 있는 해시태그이며, 2~4개의 해시태그를 생성하고, 하나의 해시태그는 5자로 제한한다."
+                        + " 해시태그 단어 앞에는 반드시 #을 붙인다."
+                        + "\n 조건 : contents 는 일기 내용이며, 350자로 제한한다. 일기 내용은 반드시 반말로 반환해야만 한다."
+                        + "\n 조건 : date 는 정해진 형식을 반환하면 된다."
+                        + "\n 조건 : title, date, hashTag, contents 를 Text JSON로 변경해서 반환한다."
+                        + "\n}"
                 + "\n{\ntype: image_url, image_url: {\n "+
                         "url :" + imageFile.convertImageUrl() +"\n}"
                 ;
