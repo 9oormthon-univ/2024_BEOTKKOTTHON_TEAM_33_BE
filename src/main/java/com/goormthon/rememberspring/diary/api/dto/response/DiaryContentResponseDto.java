@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class DiaryContentResponseDto {
     private String title;
-//    private String date;
-    private List<String> hashtag;
+    private List<String> hashtags;
     private String contents;
 }

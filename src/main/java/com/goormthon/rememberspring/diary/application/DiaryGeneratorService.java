@@ -30,11 +30,9 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 @Service
 @RequiredArgsConstructor
@@ -42,17 +40,18 @@ import org.springframework.web.client.RestTemplate;
 @Slf4j
 public class DiaryGeneratorService {
 
-    @Value("${spring.openai.model}")
-    private String model;
-
     @Value("${spring.openai.api.url}")
     private String apiURL;
 
     @Value("${spring.openai.api.key}")
     private String apiKey;
 
-    @Autowired
-    private RestTemplate template;
+    @Value("${prompt.withVoiceText}")
+    private String withVoiceText;
+
+    @Value("${prompt.withoutVoiceText}")
+    private String withoutVoiceText;
+
     private final ObjectMapper objectMapper;
     private final ImageRepository imageRepository;
     private final MemberRepository memberRepository;
@@ -62,9 +61,7 @@ public class DiaryGeneratorService {
 
     @Transactional
     public DiaryGeneratorResponseDto chat(String email, DiaryContentRequestDto diaryContentRequestDto) throws Exception {
-        // 인증 시, 헤더에 실려온 토큰을 분석하여 이메일을 받아와, Member 객체 받아옴.
-        Member member = memberRepository.findByEmail(email).orElse(null);
-        // 아직 일기 생성이 안되었으므로, 이미지 DB의 diary_id 컬럼은  null
+        Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
         List<Image> getImages = imageRepository.findByDiaryAndMember(null, member);
 
         List<ImageResDto> imageResDto = getImageResDtos(getImages);
@@ -85,8 +82,7 @@ public class DiaryGeneratorService {
 
         diaryRepository.save(diary);
 
-        // 해시태그 저장
-        for (String tagName : diaryContentResponseDto.getHashtag()) {
+        for (String tagName : diaryContentResponseDto.getHashtags()) {
             Hashtag hashtag = hashtagRepository.findByName(tagName)
                     .orElseGet(() ->
                             hashtagRepository.save(Hashtag.builder()
@@ -126,8 +122,7 @@ public class DiaryGeneratorService {
 
         diary.updateDiary(diaryContentResponseDto.getContents(), diaryRetryRequestDto.getVoiceText());
 
-        // 해시태그 저장
-        for (String tagName : diaryContentResponseDto.getHashtag()) {
+        for (String tagName : diaryContentResponseDto.getHashtags()) {
             Hashtag hashtag = hashtagRepository.findByName(tagName)
                     .orElseGet(() ->
                             hashtagRepository.save(Hashtag.builder()
@@ -144,59 +139,12 @@ public class DiaryGeneratorService {
 
     private ChatGptResponseDto buildQuery(ImageResDto imageFile, DiaryContentRequestDto dto) throws IOException, InterruptedException {
         HttpClient client = HttpClient.newHttpClient();
-        String prompt = dto.getVoiceText() != null ? "{"
-                + "\"model\": \"" + model + "\", "
-                + "\"messages\": ["
-                +     "{"
-                +         "\"role\": \"user\","
-                +         "\"content\": ["
-                +             "{"
-                +                 "\"type\": \"text\","
-                +                 "\"text\": \"일기타입은 " +  dto.getDiaryType()
-                +                             "내 감정 상태는 " + dto.getEmotion()
-                +                             "음성텍스트는 " + dto.getVoiceText() + " 이 3가지로 일기를 작성해줘."
-                +                             "반환은 title(String), hashtag(List), contents(String)이고 정확하게 JSON 으로 반환해줘."
-                +                             "title은 10자로 제한하고, 이미지와 잘 어울리는 것으로 만들어줘."
-                +                             "contents는 350자로 제한할게."
-                +                             "hashtag를 반환할 때는 앞에 #을 꼭 붙여주고, 4개 이하의 해시태그를 생성해줘. 해시태그는 4자로 제한할게."
-                +                             "너의 반환값인 content 안에 JSON 반환 이외에 말은 안해도돼.\""
-                +             "},"
-                +             "{"
-                +                 "\"type\": \"image_url\","
-                +                 "\"image_url\": {"
-                +                     "\"url\": \"" + imageFile.convertImageUrl() + "\""
-                +                 "}"
-                +             "}"
-                +         "]"
-                +     "}"
-                + "]"
-                + "}" : "{"
-                + "\"model\": \"" + model + "\", "
-                + "\"messages\": ["
-                +     "{"
-                +         "\"role\": \"user\","
-                +         "\"content\": ["
-                +             "{"
-                +                 "\"type\": \"text\","
-                +                 "\"text\": \"일기타입은 " +  dto.getDiaryType()
-                +                             "내 감정 상태는 " + dto.getEmotion()
-                +                             "이 2가지로 일기를 작성해줘."
-                +                             "반환은 title(String), hashtag(List), contents(String)이고 정확하게 JSON 으로 반환해줘."
-                +                             "title은 10자로 제한하고, 이미지와 잘 어울리는 것으로 만들어줘."
-                +                             "contents는 350자로 제한할게."
-                +                             "hashtag를 반환할 때는 앞에 #을 꼭 붙여주고, 4개 이하의 해시태그를 생성해줘. 해시태그는 4자로 제한할게."
-                +                             "너의 반환값인 content 안에 JSON 반환 이외에 말은 안해도돼.\""
-                +             "},"
-                +             "{"
-                +                 "\"type\": \"image_url\","
-                +                 "\"image_url\": {"
-                +                     "\"url\": \"" + imageFile.convertImageUrl() + "\""
-                +                 "}"
-                +             "}"
-                +         "]"
-                +     "}"
-                + "]"
-                + "}";
+        String template = dto.getVoiceText() != null ? withVoiceText: withoutVoiceText;
+
+        String prompt = template.replace("<diaryType>", dto.getDiaryType().toString())
+                .replace("<motion>", dto.getEmotion().toString())
+                .replace("<voiceText>", dto.getVoiceText() != null ? dto.getVoiceText() : "")
+                .replace("<imageUrl>", imageFile.convertImageUrl());
 
         HttpRequest request = null;
 
@@ -240,9 +188,12 @@ public class DiaryGeneratorService {
     }
 
     private String parseJson(ChatGptResponseDto chatGptResponseDto) {
+        log.info("<파싱 시작!> "+ String.valueOf(chatGptResponseDto.getChoices().get(0)));
         String content = chatGptResponseDto.getChoices().get(0).getMessage().getContent();
         content = content.substring(7);
         content = content.substring(0, content.length() - 4);
+
+        log.info("<파싱 끝!> " + content);
 
         return content;
     }

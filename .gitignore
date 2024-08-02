@@ -5,6 +5,7 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 remember-spring-gcp.json
+k8s/configs/application-prod.yml
 
 ### STS ###
 .apt_generated

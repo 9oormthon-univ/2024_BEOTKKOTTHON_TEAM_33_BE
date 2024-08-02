@@ -1,0 +1,25 @@
+namespace: default
+resources:
+  - backend.yaml
+  - ingress.yaml
+  - service.yaml
+  - mariadb.yaml
+  - python.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+  - name: nginx
+    files:
+      - configs/default.conf
+
+# configMapGenerator:
+#   - name: init-db
+#     files:
+#       - configs/init.sql
+#   - name: my-secret-file
+#     files:
+#       - configs/application.yml
+#       - configs/application-auth.yml
+#       - configs/application-prod.yml

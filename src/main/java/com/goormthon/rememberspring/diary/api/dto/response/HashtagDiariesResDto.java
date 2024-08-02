@@ -4,7 +4,7 @@ import lombok.Builder;
 import org.springframework.data.domain.Page;
 
 @Builder
-public record HashtagDiariesResDto(
+    public record HashtagDiariesResDto(
         String hashtagName,
         Page<DiaryResDto> diaryResDtoList
 ) {
