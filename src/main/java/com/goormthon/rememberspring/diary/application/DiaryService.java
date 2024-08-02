@@ -112,11 +112,14 @@ public class DiaryService {
         Member member = memberRepository.findByEmail(email).orElseThrow(MemberNotFoundException::new);
         Diary diary = diaryRepository.findById(diaryId).orElseThrow(DiaryNotFoundException::new);
 
+        boolean isLike = diaryLikeMemberRepository.existsByDiaryAndMember(diary, member);
+        int likeCount = diaryLikeMemberRepository.countByDiary(diary);
+
         if (!diary.getMember().getMemberId().equals(member.getMemberId()) && !diary.isPublic()) {
             throw new DiaryAccessDeniedException("공유되지 않은 다이어리입니다!");
         }
 
-        return DiaryResDto.from(diary);
+        return DiaryResDto.of(diary, isLike, likeCount);
     }
 
     // 다이어리 공유하기, 공유취소

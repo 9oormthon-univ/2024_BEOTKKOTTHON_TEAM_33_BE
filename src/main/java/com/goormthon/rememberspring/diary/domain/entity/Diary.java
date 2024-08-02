@@ -60,7 +60,7 @@ public class Diary extends BaseTimeEntity {
     private String voiceText;
 
     // 글 내용
-    @Column(nullable = false)
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
     @Column(nullable = false)

@@ -13,6 +13,7 @@ public record PublicDiaryResDto(
         int likeCount,
         boolean isPublic,
         String writer,
+        String writerPicture,
         String title,
         String createAt,
         String content,
@@ -34,6 +35,7 @@ public record PublicDiaryResDto(
                 .likeCount(likeCount)
                 .isPublic(diary.isPublic())
                 .writer(diary.getMember().getName())
+                .writerPicture(diary.getMember().getPicture())
                 .title(diary.getTitle())
                 .createAt(diary.getCreateAt().format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일")))
                 .content(diary.getContent())
