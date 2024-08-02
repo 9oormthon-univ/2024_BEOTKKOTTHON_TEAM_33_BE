@@ -1,0 +1,61 @@
+spring:
+  profiles:
+    active: prod
+
+  datasource:
+    url: ${spring.datasource.url}
+    username: ${spring.datasource.username}
+    password: ${spring.datasource.password}
+    driver-class-name: ${spring.datasource.driver-class-name}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+    open-in-view: false
+
+# openAI 모델 및 키, 엔드포인트
+  openai:
+    model: ${spring.openai.model}
+    api:
+      key: ${spring.openai.api.key}
+      url: ${spring.openai.api.url}
+
+  cloud:
+    gcp:
+      storage:
+        credentials:
+          location: ${spring.cloud.gcp.storage.credentials.location}
+        project-id: ${spring.cloud.gcp.storage.project-id}
+        bucket: ${spring.cloud.gcp.storage.bucket}
+
+  #  이미지 용량 제한
+  servlet:
+    multipart:
+      maxFileSize: 10MB
+      maxRequestSize: 60MB
+
+logging:
+  level:
+    org.hibernate.sql: debug
+    org.hibernate.type: trace
+
+springdoc:
+  packages-to-scan: com.goormthon
+  default-consumes-media-type: application/json;charset=UTF-8
+  default-produces-media-type: application/json;charset=UTF-8
+  swagger-ui:
+    tags-sorter: method
+    operations-sorter: alpha
+  api-docs:
+    path: /api-docs/json
+    groups:
+      enabled: true
+  cache:
+    disabled: true
+
+myapp:
+  api-url: ${myapp.api-url}

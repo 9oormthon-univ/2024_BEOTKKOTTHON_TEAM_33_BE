@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python
+  labels:
+    app: python
+spec:
+  selector:
+    matchLabels:
+      app: python
+  template:
+    metadata:
+      labels:
+        app: python
+    spec:
+      containers:
+        - name: python
+          image: krmp-d2hub-idock.9rum.cc/dev-test/repo_ca8d6d29dc2b
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
